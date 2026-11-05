@@ -108,11 +108,9 @@
   },
   "grayl-geopress": {
    "checkedOn": "2026-11-05",
-   "peak": 90,
+   "peak": 100,
    "peakOn": "2026-11-05",
-   "price": 90,
-   "saleLabel": "On sale",
-   "wasPrice": 100
+   "price": 100
   },
   "gsi-glacier": {
    "checkedOn": "2026-11-05",
@@ -137,6 +135,12 @@
    "peak": 420,
    "peakOn": "2026-11-05",
    "price": 420
+  },
+  "jetboil-flash": {
+   "checkedOn": "2026-11-05",
+   "peak": 116,
+   "peakOn": "2026-11-05",
+   "price": 116
   },
   "keen-targhee-iv": {
    "checkedOn": "2026-11-05",

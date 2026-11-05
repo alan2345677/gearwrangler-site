@@ -1,6 +1,15 @@
 {
  "checkedOn": "2026-11-05",
- "held": [],
+ "held": [
+  {
+   "id": "marmot-trestles-30",
+   "name": "Marmot Trestles 30",
+   "original": null,
+   "price": 179.0,
+   "reason": "read $179 but expected about $130",
+   "url": "https://www.marmot.com/p/trestles-elite-eco-30-sleeping-bag/SP_2948365/AFS_195115321598.html"
+  }
+ ],
  "notRead": [
   {
    "id": "exped-ultra-6-5r",
@@ -26,11 +35,6 @@
    "id": "rei-magma-15",
    "name": "REI Co-op Magma 15",
    "reason": "store refused the check (403)"
-  },
-  {
-   "id": "marmot-trestles-30",
-   "name": "Marmot Trestles 30",
-   "reason": "page returned an error (404)"
   },
   {
    "id": "mountainhardwear-phantom-0",
@@ -110,7 +114,7 @@
   {
    "id": "montbell-versalite",
    "name": "Montbell Versalite",
-   "reason": "no price found on the page"
+   "reason": "no connection"
   },
   {
    "id": "patagonia-torrentshell-3l",
@@ -203,11 +207,6 @@
    "reason": "store shows no price"
   },
   {
-   "id": "jetboil-flash",
-   "name": "Jetboil Flash",
-   "reason": "page returned an error (404)"
-  },
-  {
    "id": "jetboil-stash",
    "name": "Jetboil Stash",
    "reason": "no price found on the page"
@@ -215,7 +214,7 @@
   {
    "id": "jetboil-minimo",
    "name": "Jetboil MiniMo",
-   "reason": "page returned an error (404)"
+   "reason": "no price found on the page"
   },
   {
    "id": "coleman-fyrestorm",
@@ -366,9 +365,9 @@
   }
  ],
  "summary": {
-  "held": 0,
-  "not_read": 44,
+  "held": 1,
+  "not_read": 42,
   "not_tracked": 28,
-  "updated": 63
+  "updated": 64
  }
 }
