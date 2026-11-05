@@ -1,0 +1,116 @@
+{
+  "about": "Gear Wrangler's own tags and estimates, kept by hand. Wharton's pages don't publish per-trip gear lists or temperatures, so gearNeeds are estimates based on each trip's region, season, and listed activities. Replace them with Wharton's real gear lists when you have them. 'match' is the set of words that identifies a trip in its name or location. 'items' uses the site's category keys. terrain, rainLikelihood, and headlampUse use the option values from the site's shoes, jacket, and headlamp questions.",
+  "expeditions": {
+    "vodudahue": {
+      "match": "Vodudahue",
+      "settings": ["forest", "mountains"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 38,
+        "tripLengthNights": 8,
+        "terrain": "offtrail",
+        "rainLikelihood": "sustained",
+        "headlampUse": "backpacking"
+      }
+    },
+    "atacama": {
+      "match": "Atacama",
+      "settings": ["desert", "mountains"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 25,
+        "tripLengthNights": 7,
+        "terrain": "backpacking",
+        "rainLikelihood": "casual",
+        "headlampUse": "technical"
+      }
+    },
+    "corsica": {
+      "match": "Corsica",
+      "settings": ["mountains", "ocean"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 35,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "regular",
+        "headlampUse": "backpacking"
+      }
+    },
+    "french-alps": {
+      "match": "French Alps",
+      "settings": ["mountains"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 25,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "regular",
+        "headlampUse": "backpacking"
+      }
+    },
+    "andes": {
+      "match": "Andes",
+      "settings": ["mountains", "snow"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 10,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "casual",
+        "headlampUse": "technical",
+        "note": "This trip likely also needs technical gear that Gear Wrangler doesn't cover, such as mountaineering boots and crampons."
+      }
+    },
+    "antarctica": {
+      "match": "Antarctica",
+      "settings": ["snow", "mountains"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 10,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "sustained",
+        "headlampUse": "camp",
+        "note": "This trip likely also needs technical gear that Gear Wrangler doesn't cover, such as mountaineering boots and glacier equipment."
+      }
+    },
+    "aotearoa": {
+      "match": "Aotearoa",
+      "settings": ["mountains", "forest"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 35,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "sustained",
+        "headlampUse": "backpacking"
+      }
+    },
+    "avellano": {
+      "match": "Avellano",
+      "settings": ["mountains"],
+      "gearNeeds": {
+        "items": ["bag", "pad", "pack", "jacket", "shoes", "headlamp"],
+        "coldestTempF": 28,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "regular",
+        "headlampUse": "backpacking"
+      }
+    },
+    "small-crew": {
+      "match": "Small Crew",
+      "settings": ["ocean"],
+      "gearNeeds": {
+        "items": ["jacket", "headlamp"],
+        "coldestTempF": 65,
+        "tripLengthNights": 7,
+        "terrain": "light",
+        "rainLikelihood": "regular",
+        "headlampUse": "camp",
+        "note": "This is a boat trip, so this estimate assumes you won't need a sleeping bag, pad, backpack, or hiking shoes."
+      }
+    }
+  }
+}

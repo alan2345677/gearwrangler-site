@@ -1,0 +1,472 @@
+{
+  "updated": "2026-11-05",
+  "portfolio": "2026-27",
+  "source": {
+    "undergrad": "https://leadership.wharton.upenn.edu/undergrad-ventures/",
+    "mba": "https://leadership.wharton.upenn.edu/mba-leadership-ventures/"
+  },
+  "expeditions": [
+    {
+      "id": "undergrad-vodudahue-cloud-forest-patagonia",
+      "program": "undergrad",
+      "name": "Vodudahue Cloud Forest - Patagonia",
+      "location": "Pumalin Park, Chile",
+      "when": "Dec. 28 2026 - Jan. 5, 2027",
+      "endsBy": "2027-01-05",
+      "focus": [
+        "Backcountry Trekking",
+        "Rafting"
+      ],
+      "cost": 2800,
+      "openTo": "All Penn UGR Students",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10120",
+      "traits": [
+        "coldWeather",
+        "heavyPack",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "forest",
+        "mountains"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 38,
+        "tripLengthNights": 8,
+        "terrain": "offtrail",
+        "rainLikelihood": "sustained",
+        "headlampUse": "backpacking"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "undergrad-atacama-desert",
+      "program": "undergrad",
+      "name": "Atacama Desert",
+      "location": "San Pedro de Atacama, Chile",
+      "when": "March 6-13, 2027",
+      "endsBy": "2027-03-13",
+      "focus": [
+        "Multi-disciplinary",
+        "Backpacking",
+        "Rock Climbing",
+        "High Altitude Navigation"
+      ],
+      "cost": 2800,
+      "openTo": "All Penn UGR Students",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10109",
+      "traits": [
+        "altitude",
+        "coldWeather",
+        "heavyPack",
+        "irregularSleep",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "desert",
+        "mountains"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 25,
+        "tripLengthNights": 7,
+        "terrain": "backpacking",
+        "rainLikelihood": "casual",
+        "headlampUse": "technical"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-corsica",
+      "program": "mba",
+      "name": "Corsica",
+      "location": "Corsica, France",
+      "when": "Fall Break",
+      "endsBy": "2026-10-31",
+      "focus": [
+        "Multi-disciplinary",
+        "Backcountry Trekking",
+        "Backpacking",
+        "Rock Climbing",
+        "Kayaking"
+      ],
+      "cost": 4600,
+      "openTo": "MBA / WEMBA 2Y",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10113",
+      "traits": [
+        "heavyPack",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "mountains",
+        "ocean"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 35,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "regular",
+        "headlampUse": "backpacking"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-valley-of-marvels-french-alps",
+      "program": "mba",
+      "name": "Valley of Marvels - French Alps",
+      "location": "Southern French Alps",
+      "when": "Fall Break",
+      "endsBy": "2026-10-31",
+      "focus": [
+        "Multi-disciplinary",
+        "Backcountry Trekking",
+        "Backpacking",
+        "Rock Climbing",
+        "Summit Attempt"
+      ],
+      "cost": 4400,
+      "openTo": "MBA / WEMBA 2Y",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10134",
+      "traits": [
+        "altitude",
+        "coldWeather",
+        "heavyPack",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "mountains"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 25,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "regular",
+        "headlampUse": "backpacking"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-atacama-desert",
+      "program": "mba",
+      "name": "Atacama Desert",
+      "location": "San Pedro de Atacama, Chile",
+      "when": "Fall Break",
+      "endsBy": "2026-10-31",
+      "focus": [
+        "Multi-disciplinary",
+        "Backpacking",
+        "Rock Climbing",
+        "High Altitude Navigation"
+      ],
+      "cost": 4000,
+      "openTo": "MBA / WEMBA 2Y",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10064",
+      "traits": [
+        "altitude",
+        "coldWeather",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "desert",
+        "mountains"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 25,
+        "tripLengthNights": 7,
+        "terrain": "backpacking",
+        "rainLikelihood": "casual",
+        "headlampUse": "technical"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-andes-mountaineering",
+      "program": "mba",
+      "name": "Andes Mountaineering",
+      "location": "Cerro El Plomo, Chile",
+      "when": "Winter Break",
+      "endsBy": "2027-01-31",
+      "focus": [
+        "High-altitude Mountaineering",
+        "Backpacking",
+        "Glacier/Snow Travel"
+      ],
+      "cost": 4000,
+      "openTo": "MBA / WEMBA",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10066",
+      "traits": [
+        "altitude",
+        "coldWeather",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "mountains",
+        "snow"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 10,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "casual",
+        "headlampUse": "technical",
+        "note": "This trip likely also needs technical gear that Gear Wrangler doesn't cover, such as mountaineering boots and crampons."
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-antarctica",
+      "program": "mba",
+      "name": "Antarctica",
+      "location": "King George Island, Antarctica",
+      "when": "Winter Break",
+      "endsBy": "2027-01-31",
+      "focus": [
+        "Backpacking",
+        "Mountaineering",
+        "Glacier travel",
+        "Winter tent camping",
+        "Navigation",
+        "Route finding"
+      ],
+      "cost": 8400,
+      "openTo": "MBA / WEMBA",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10093",
+      "traits": [
+        "coldWeather",
+        "heavyPack",
+        "longTrek"
+      ],
+      "settings": [
+        "snow",
+        "mountains"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 10,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "sustained",
+        "headlampUse": "camp",
+        "note": "This trip likely also needs technical gear that Gear Wrangler doesn't cover, such as mountaineering boots and glacier equipment."
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-aotearoa-southern-traverse-nz",
+      "program": "mba",
+      "name": "Aotearoa Southern Traverse - NZ",
+      "location": "South Island, New Zealand",
+      "when": "Winter Break",
+      "endsBy": "2027-01-31",
+      "focus": [
+        "Multi-disciplinary",
+        "Backcountry Trekking",
+        "River Crossing",
+        "Rafting"
+      ],
+      "cost": 4600,
+      "openTo": "MBA / WEMBA",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10071",
+      "traits": [
+        "heavyPack",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "mountains",
+        "forest"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 35,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "sustained",
+        "headlampUse": "backpacking"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-avellano-valley-patagonia",
+      "program": "mba",
+      "name": "Avellano Valley - Patagonia",
+      "location": "Cerro Castillo, Chile",
+      "when": "Spring Break",
+      "endsBy": "2027-03-31",
+      "focus": [
+        "Backcountry Trekking"
+      ],
+      "cost": 4000,
+      "openTo": "MBA / WEMBA 2Y",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10114",
+      "traits": [
+        "coldWeather",
+        "heavyPack",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "mountains"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 28,
+        "tripLengthNights": 7,
+        "terrain": "offtrail",
+        "rainLikelihood": "regular",
+        "headlampUse": "backpacking"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-vodudahue-cloud-forest-patagonia",
+      "program": "mba",
+      "name": "Vodudahue Cloud Forest - Patagonia",
+      "location": "Pumalin Park, Chile",
+      "when": "Spring Break",
+      "endsBy": "2027-03-31",
+      "focus": [
+        "Backcountry Trekking",
+        "Rafting"
+      ],
+      "cost": 4100,
+      "openTo": "MBA / WEMBA 2Y",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10086",
+      "traits": [
+        "coldWeather",
+        "heavyPack",
+        "longDays",
+        "longTrek"
+      ],
+      "settings": [
+        "forest",
+        "mountains"
+      ],
+      "gearNeeds": {
+        "items": [
+          "bag",
+          "pad",
+          "pack",
+          "jacket",
+          "shoes",
+          "headlamp"
+        ],
+        "coldestTempF": 38,
+        "tripLengthNights": 8,
+        "terrain": "offtrail",
+        "rainLikelihood": "sustained",
+        "headlampUse": "backpacking"
+      },
+      "needsReview": false
+    },
+    {
+      "id": "mba-small-crew-sailing",
+      "program": "mba",
+      "name": "Small Crew Sailing",
+      "location": "British Virgin Islands",
+      "when": "Spring Break",
+      "endsBy": "2027-03-31",
+      "focus": [
+        "Caribbean Ocean Sailing",
+        "Navigation",
+        "Racing"
+      ],
+      "cost": 4600,
+      "openTo": "MBA / WEMBA 2Y",
+      "url": "https://wharton-sa.terradotta.com/_portal/tds-program-brochure?programid=10070",
+      "traits": [
+        "irregularSleep",
+        "seaSickness"
+      ],
+      "settings": [
+        "ocean"
+      ],
+      "gearNeeds": {
+        "items": [
+          "jacket",
+          "headlamp"
+        ],
+        "coldestTempF": 65,
+        "tripLengthNights": 7,
+        "terrain": "light",
+        "rainLikelihood": "regular",
+        "headlampUse": "camp",
+        "note": "This is a boat trip, so this estimate assumes you won't need a sleeping bag, pad, backpack, or hiking shoes."
+      },
+      "needsReview": false
+    }
+  ]
+}
