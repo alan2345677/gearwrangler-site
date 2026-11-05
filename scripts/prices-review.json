@@ -1,0 +1,389 @@
+{
+ "checkedOn": "2026-11-05",
+ "held": [],
+ "notRead": [
+  {
+   "id": "exped-ultra-6-5r",
+   "name": "Exped Ultra 6.5R",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "rei-traverse-pad",
+   "name": "REI Co-op Traverse",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "rei-helix-insulated",
+   "name": "REI Co-op Helix Insulated",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "klymit-static-v2",
+   "name": "Klymit Static V2",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "rei-magma-15",
+   "name": "REI Co-op Magma 15",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "marmot-trestles-30",
+   "name": "Marmot Trestles 30",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "mountainhardwear-phantom-0",
+   "name": "Mountain Hardwear Phantom 0",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "mountainhardwear-bishop-pass-15",
+   "name": "Mountain Hardwear Bishop Pass 15",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "exped-terra-15",
+   "name": "Exped Terra 15",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "rei-halfdome-sl2plus",
+   "name": "REI Co-op Half Dome SL 2+",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "rei-halfdome-3plus",
+   "name": "REI Co-op Half Dome 3 Plus",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "rei-trailhut-2",
+   "name": "REI Co-op Trail Hut 2",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "mountainhardwear-mineralking-3",
+   "name": "Mountain Hardwear Mineral King 3",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "marmot-tungsten-4p",
+   "name": "Marmot Tungsten 4P",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "rei-flashair-2",
+   "name": "REI Co-op Flash Air 2 Tent",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "osprey-exos-58",
+   "name": "Osprey Exos 58",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "gregory-baltoro-75",
+   "name": "Gregory Baltoro 75",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "osprey-atmos-ag65",
+   "name": "Osprey Atmos AG 65",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "rei-trailmade-60",
+   "name": "REI Co-op Trailmade 60",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "osprey-aether-65",
+   "name": "Osprey Aether 65",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "gregory-paragon-60",
+   "name": "Gregory Paragon 60",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "mysteryranch-glacier",
+   "name": "Mystery Ranch Glacier",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "montbell-versalite",
+   "name": "Montbell Versalite",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "patagonia-torrentshell-3l",
+   "name": "Patagonia Torrentshell 3L",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "rei-rainier",
+   "name": "REI Co-op Rainier Rain Jacket",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "marmot-precip-eco",
+   "name": "Marmot PreCip Eco",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "hellyhansen-verglas-infinity-2",
+   "name": "Helly Hansen Verglas Infinity Shell 2.0",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "rei-xerocloud-3l",
+   "name": "REI Co-op XeroCloud 3L",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "mammut-ducan-light",
+   "name": "Mammut Ducan Light Hardshell",
+   "reason": "store data couldn't be read"
+  },
+  {
+   "id": "salomon-quest5-gtx",
+   "name": "Salomon Quest 5 GTX",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "lasportiva-ultraraptor3-mid",
+   "name": "La Sportiva Ultra Raptor III Mid GTX",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "merrell-moabspeed2-mid",
+   "name": "Merrell Moab Speed 2 Mid GTX",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "danner-trail-2650",
+   "name": "Danner Trail 2650",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "nitecore-nu25",
+   "name": "Nitecore NU25",
+   "reason": "no connection"
+  },
+  {
+   "id": "nitecore-nu27",
+   "name": "Nitecore NU27",
+   "reason": "no connection"
+  },
+  {
+   "id": "petzl-actik-core",
+   "name": "Petzl Actik Core",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "petzl-e-lite",
+   "name": "Petzl e+LITE",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "ledlenser-hf6r-signature",
+   "name": "Ledlenser HF6R Signature",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "sawyer-squeeze",
+   "name": "Sawyer Squeeze",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "katadyn-befree-1l",
+   "name": "Katadyn BeFree 1L",
+   "reason": "store shows no price"
+  },
+  {
+   "id": "katadyn-befree-gravity-6l",
+   "name": "Katadyn BeFree Gravity 6L",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "katadyn-hiker-pro",
+   "name": "Katadyn Hiker Pro",
+   "reason": "store shows no price"
+  },
+  {
+   "id": "jetboil-flash",
+   "name": "Jetboil Flash",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "jetboil-stash",
+   "name": "Jetboil Stash",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "jetboil-minimo",
+   "name": "Jetboil MiniMo",
+   "reason": "no price found on the page"
+  },
+  {
+   "id": "coleman-fyrestorm",
+   "name": "Coleman FyreStorm",
+   "reason": "store refused the check (403)"
+  },
+  {
+   "id": "snowpeak-litemax",
+   "name": "Snow Peak LiteMax",
+   "reason": "store refused the check (403)"
+  }
+ ],
+ "notTracked": [
+  {
+   "id": "sleepingo-ultralight",
+   "name": "Sleepingo Ultralight Sleeping Mat",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "trekology-ul80",
+   "name": "TREKOLOGY UL80",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "trekology-aluft-r5",
+   "name": "TREKOLOGY ALUFT R5",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "gear-doctors-ether",
+   "name": "Gear Doctors Ether Ultralight",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "hikenture-r4",
+   "name": "Hikenture R4",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "naturehike-ultralight-down",
+   "name": "Naturehike Ultralight Down Sleeping Bag",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "teton-celsius-xxl",
+   "name": "TETON Sports Celsius XXL 0°F",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "coleman-brazos-30",
+   "name": "Coleman Brazos 30°F",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "naturehike-cloudup-2",
+   "name": "Naturehike Cloud-Up 2",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "coleman-sundome-2",
+   "name": "Coleman Sundome 2",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "naturehike-starriver-1",
+   "name": "Naturehike Star-River 1",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "teton-scout-3400",
+   "name": "TETON Sports Scout 3400",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "mountaintop-50l",
+   "name": "Mountaintop 50L Hiking Backpack",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "froggtoggs-ultralite2",
+   "name": "Frogg Toggs Ultra-Lite2",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "amazon-generic-rain-jacket",
+   "name": "TACVASEN Waterproof Rain Jacket",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "hoka-speedgoat5",
+   "name": "HOKA Speedgoat 5",
+   "reason": "only out-of-stock listings at this store"
+  },
+  {
+   "id": "nortiv8-hiking-boots",
+   "name": "NORTIV 8 Hiking Boots",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "xpeti-waterproof-boots",
+   "name": "XPETI Waterproof Hiking Boots",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "biolite-800",
+   "name": "BioLite 800",
+   "reason": "store now sells the 800 Pro, a different model at a different price"
+  },
+  {
+   "id": "vitchelo-v800",
+   "name": "Vitchelo V800",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "foxelli-headlamp",
+   "name": "Foxelli Rechargeable Headlamp",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "waterdrop-gravity-bag",
+   "name": "Waterdrop Filter Straw & Gravity Bag",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "lifestraw-original",
+   "name": "LifeStraw Original Personal Straw",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "brs-3000t",
+   "name": "BRS-3000T Titanium Stove",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "primus-express-spider",
+   "name": "Primus Express Spider",
+   "reason": "store lists prices in Swedish kronor"
+  },
+  {
+   "id": "primus-primetech-1-3l",
+   "name": "Primus PrimeTech Stove System 1.3L",
+   "reason": "store lists prices in Swedish kronor"
+  },
+  {
+   "id": "odoland-camping-stove",
+   "name": "Odoland Portable Camping Stove",
+   "reason": "links to an Amazon search, not one product"
+  },
+  {
+   "id": "redcamp-mini-titanium",
+   "name": "REDCAMP Mini Titanium Stove",
+   "reason": "links to an Amazon search, not one product"
+  }
+ ],
+ "summary": {
+  "held": 0,
+  "not_read": 47,
+  "not_tracked": 28,
+  "updated": 57
+ }
+}
