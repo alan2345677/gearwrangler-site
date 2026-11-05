@@ -121,10 +121,6 @@
   .range-ends{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-soft); }
 
   /* priority rows (segmented 3-choice) */
-  .priority-row{ margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid var(--line); }
-  .priority-row:last-child{ border-bottom:none; }
-  .priority-label{ font-size:15.5px; font-weight:700; margin-bottom:2px; }
-  .priority-hint{ font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; }
   .segmented{ display:flex; gap:6px; }
   .seg-btn{
     flex:1; display:flex; align-items:center; justify-content:center; text-align:center;
@@ -400,13 +396,7 @@
   .hero-explain h2{ font-size:32px; line-height:1.15; margin-bottom:20px; }
   .hero-explain p{ font-size:16px; line-height:1.65; color:var(--ink-soft); margin:0 0 22px; }
   .hero-explain p.lead{ font-size:18px; color:var(--ink); }
-  .hero-explain em{ font-style:normal; color:var(--ink); font-weight:600; }
-
-  .utility-diagram{ margin:36px 0; }
-  .utility-diagram svg{ width:100%; height:auto; }
-  .utility-legend{ display:flex; gap:22px; flex-wrap:wrap; margin-top:10px; }
-  .utility-legend span{ font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
-  .utility-legend i{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .hero-explain p.blurb{ margin-bottom:56px; }
 
   .process-steps{ margin-top:36px; }
   .tool-section{ margin-top:48px; padding-top:40px; border-top:1px solid var(--line); }
@@ -468,6 +458,9 @@
     </div>
     <div class="hero-explain">
       <div class="hero-explain-inner">
+        <h2>Spend smarter on outdoor gear</h2>
+        <p class="lead blurb">Outdoor gear is easy to overspend on and easy to get wrong. Gear Wrangler is built to help you make the best buying decision for you. It weighs price, weight, durability, and performance against your trip, your budget, and your priorities, so your money goes to gear that fits how you get outside.</p>
+
         <h2>Two tools, one goal</h2>
         <p class="lead">Buying gear well means solving two different problems: figuring out what to get in the first place, and knowing whether something you're already eyeing is actually right for your trip. Gear Wrangler does both.</p>
 
@@ -476,29 +469,10 @@
           <h3 class="tool-title">For when you're starting from scratch</h3>
           <p>Every gear review site ranks products the same way: for the average person, on average terrain, with an average budget. But you're one specific person with one specific trip in mind, and the pad that's "best overall" might be the wrong pad for you.</p>
 
-          <div class="utility-diagram">
-            <svg viewBox="0 0 340 190" fill="none">
-              <line x1="30" y1="160" x2="320" y2="160" stroke="#D8D4C9" stroke-width="1.5"/>
-              <line x1="30" y1="160" x2="30" y2="20" stroke="#D8D4C9" stroke-width="1.5"/>
-              <path d="M30 152C70 120 100 60 150 44C200 30 260 26 315 24" stroke="#37453A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-              <path d="M30 155C90 148 150 120 200 80C240 48 280 32 315 28" stroke="#A79C8B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-              <text x="150" y="180" font-family="Archivo, sans-serif" font-size="11" fill="#5B6058">more of an attribute (warmth, capacity, brightness…)</text>
-              <text x="14" y="90" font-family="Archivo, sans-serif" font-size="11" fill="#5B6058" transform="rotate(-90 14 90)">how much it's worth to you</text>
-              <circle cx="150" cy="44" r="3.5" fill="#37453A"/>
-              <circle cx="200" cy="80" r="3.5" fill="#A79C8B"/>
-            </svg>
-            <div class="utility-legend">
-              <span><i style="background:#37453A"></i> someone who barely needs it</span>
-              <span><i style="background:#A79C8B"></i> someone who needs it a lot</span>
-            </div>
-          </div>
-
-          <p>That curve is sometimes called <em>diminishing marginal utility</em>: the same extra ounce of warmth is worth a lot to one person and almost nothing to another, depending on where they already sit on the curve. A thru-hiker who's already warm enough needs less weight, not more warmth. A weekend camper who's always cold needs the opposite. Neither is well served by a single "best" answer.</p>
-
           <div class="process-steps">
             <div class="step">
               <span class="step-num">1</span>
-              <div><h3>Tell us what matters</h3><p>A few quick questions about your trip and how much you care about weight, price, durability, and comfort.</p></div>
+              <div><h3>Tell us what matters</h3><p>A few quick questions about your trip, your budget, and what you care about most.</p></div>
             </div>
             <div class="step">
               <span class="step-num">2</span>
@@ -540,7 +514,7 @@
     <div class="cat-tabs" id="catTabs"></div>
     <div class="progress-row" id="progressRow" style="display:none;">
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
-      <div class="progress-label" id="progressLabel">1 / 6</div>
+      <div class="progress-label" id="progressLabel">1 / 4</div>
     </div>
   </div>
 
@@ -556,7 +530,7 @@
         </button>
         <button class="hero-btn secondary" onclick="goToStep(0)">
           Answer a few quick questions
-          <span class="opt-sub">Takes about a minute, gets a better match</span>
+          <span class="opt-sub">Just four questions, for a better match</span>
         </button>
       </div>
     </div>
@@ -590,7 +564,7 @@
     <span class="back-link" onclick="goToStep(1)">← Back</span>
     <div class="q-wrap">
       <h1 class="question">Buying for one trip, or for years?</h1>
-      <p class="subtext">This nudges price vs. durability. You can still fine-tune both later.</p>
+      <p class="subtext">This balances price against how long it lasts.</p>
       <div class="option-list">
         <button class="option-btn" data-val="trial" onclick="selectTripType('trial')">Just trying it out<span class="opt-sub">One trip, or testing the hobby</span></button>
         <button class="option-btn" data-val="regular" onclick="selectTripType('regular')">I'll use it sometimes<span class="opt-sub">Casual, on-and-off use</span></button>
@@ -599,63 +573,14 @@
     </div>
   </section>
 
-  <!-- STEP: EXTRAS -->
-  <section class="screen" id="screen-extras">
-    <span class="back-link" onclick="goToStep(2)">← Back</span>
-    <div class="q-wrap compact">
-      <h1 class="question">Anything else to include?</h1>
-      <p class="subtext">Both are optional — flip on whatever's useful.</p>
-      <div class="toggle-row">
-        <label class="toggle-switch">
-          <input type="checkbox" id="includeAmazon" checked>
-          <span class="toggle-slider"></span>
-        </label>
-        <div>
-          <div class="toggle-title">Amazon budget picks</div>
-          <div class="toggle-desc">Cheaper, lesser-known brands. Fine for casual use.</div>
-        </div>
-      </div>
-      <div class="toggle-row">
-        <label class="toggle-switch">
-          <input type="checkbox" id="includeUsed">
-          <span class="toggle-slider"></span>
-        </label>
-        <div>
-          <div class="toggle-title">Used / pre-owned</div>
-          <div class="toggle-desc">~30–60% cheaper. Estimated price, condition varies.</div>
-        </div>
-      </div>
-      <button class="btn" style="margin-top:26px;" onclick="goToStep(4)">Next</button>
-    </div>
-  </section>
-
   <!-- STEP: PRIORITIES -->
   <section class="screen" id="screen-priorities">
-    <span class="back-link" onclick="goToStep(3)">← Back</span>
+    <span class="back-link" onclick="goToStep(2)">← Back</span>
     <div class="q-wrap compact">
       <h1 class="question">What matters most?</h1>
-      <p class="subtext">Tap one for each. Not sure? Leave it on Somewhat.</p>
-      <div id="priorityRows"></div>
-      <button class="btn" style="margin-top:8px;" onclick="goToStep(5)">Next</button>
-    </div>
-  </section>
-
-  <!-- STEP: TRADEOFFS -->
-  <section class="screen" id="screen-tradeoffs">
-    <span class="back-link" onclick="goToStep(4)">← Back</span>
-    <div class="q-wrap compact">
-      <h1 class="question">Two quick trade-offs.</h1>
-      <p class="subtext">Optional — skip if neither matters to you.</p>
-      <div class="priority-row">
-        <div class="priority-label" id="tradeoff1Q"></div>
-        <div class="segmented" id="tradeoff1Seg"></div>
-      </div>
-      <div class="priority-row" style="border-bottom:none;">
-        <div class="priority-label" id="tradeoff2Q"></div>
-        <div class="segmented" id="tradeoff2Seg"></div>
-      </div>
-      <button class="btn" style="margin-top:10px;" onclick="goToResults()">See my match</button>
-      <span class="skip-link" onclick="goToResults()">Skip</span>
+      <p class="subtext">Tap any that apply, or skip ahead.</p>
+      <div class="option-list" id="priorityOptions"></div>
+      <button class="btn" style="margin-top:8px;" onclick="goToResults()">See my match</button>
     </div>
   </section>
 
@@ -680,7 +605,29 @@
     <span class="back-link" onclick="goToStep(0)">← Adjust answers</span>
     <h1 class="question" id="resultsTitle" style="margin-top:6px;">Your best-fit pick.</h1>
     <p class="subtext" id="resultsSub"></p>
-    <div id="resultsContent"></div>
+    <div id="resultsTop"></div>
+    <div class="section-label">Also show</div>
+    <div class="toggle-row">
+      <label class="toggle-switch">
+        <input type="checkbox" id="includeAmazon" aria-label="Amazon budget picks" checked>
+        <span class="toggle-slider"></span>
+      </label>
+      <div>
+        <div class="toggle-title">Amazon budget picks</div>
+        <div class="toggle-desc">Cheaper, lesser-known brands. Fine for casual use.</div>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <label class="toggle-switch">
+        <input type="checkbox" id="includeUsed" aria-label="Used or pre-owned">
+        <span class="toggle-slider"></span>
+      </label>
+      <div>
+        <div class="toggle-title">Used / pre-owned</div>
+        <div class="toggle-desc">~30–60% cheaper. Estimated price, condition varies.</div>
+      </div>
+    </div>
+    <div id="resultsRest"></div>
     <details class="info">
       <summary>Where do these numbers come from?</summary>
       <p>We check store prices once a day where stores allow it, and show the date of the last check. Other new-item prices come from 2026 gear guides and retailer listings, and show the month they were last updated. "On sale" means the store lists a higher regular price. "Price drop" means the price fell from the highest we've seen in the last 90 days. Sale prices may only apply to some colors or sizes, so confirm the price on the store's page before you buy. Amazon picks link to a search, not one exact listing, since pages change often. Used prices are estimates (30–60% off the regular price) based on typical resale discounts — check the linked marketplace for real listings.</p>
@@ -1314,8 +1261,6 @@ const CATEGORIES = {
       comfort:{label:'Comfort', hint:'Thicker = comfier, thinner = smaller', field:'thickness_in', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Warmth or weight?', neg:'Lighter', mid:'Either', pos:'Warmer'},
-    tradeoff2:{question:'Durability or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'warmth', weightLight:'low weight', durability:'durability', comfort:'comfort', price:'price'},
     meta:p => [`${p.rValue} R-value`, `${p.weight_oz} oz`, `${p.thickness_in}" thick`, p.type],
     altSpecs:p => `${p.rValue} R-value · ${p.weight_oz} oz · ${p.thickness_in}" thick`,
@@ -1349,8 +1294,6 @@ const CATEGORIES = {
       comfort:{label:'Roomier fit', hint:'Less restrictive to sleep in', field:'comfort', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Warmth or weight?', neg:'Lighter', mid:'Either', pos:'Warmer'},
-    tradeoff2:{question:'Durability or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'warmth', weightLight:'low weight', durability:'durability', comfort:'comfort', price:'price'},
     meta:p => [`${p.tempRating}°F rated`, `${p.weight_oz} oz`, p.fill],
     altSpecs:p => `${p.tempRating}°F rated · ${p.weight_oz} oz · ${p.fill}`,
@@ -1379,8 +1322,6 @@ const CATEGORIES = {
       comfort:{label:'More space', hint:'Room to move and store gear', field:'floorArea', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Protection or weight?', neg:'Lighter', mid:'Either', pos:'Tougher weather'},
-    tradeoff2:{question:'Durability or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'weather protection', weightLight:'low weight', durability:'durability', comfort:'interior space', price:'price'},
     meta:p => [`${p.weight_oz} oz`, `${p.floorArea} sq ft`, `${p.doors} door${p.doors>1?'s':''}`, p.freestanding ? 'freestanding' : 'trekking-pole'],
     altSpecs:p => `${p.weight_oz} oz · ${p.floorArea} sq ft · ${p.freestanding ? 'freestanding' : 'trekking-pole'}`,
@@ -1413,8 +1354,6 @@ const CATEGORIES = {
       comfort:{label:'Strap & belt comfort', hint:'How it feels loaded up', field:'comfort', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Carrying capacity or weight?', neg:'Lighter', mid:'Either', pos:'Carries more'},
-    tradeoff2:{question:'Durability or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'load capacity', weightLight:'low weight', durability:'durability', comfort:'carrying comfort', price:'price'},
     meta:p => [`${p.capacityL}L`, `${p.weight_oz} oz`, `${p.maxLoad_lbs} lb max load`],
     altSpecs:p => `${p.capacityL}L · ${p.weight_oz} oz · ${p.maxLoad_lbs} lb max`,
@@ -1447,8 +1386,6 @@ const CATEGORIES = {
       comfort:{label:'Breathability', hint:'Less clammy when you\u2019re working hard', field:'comfort', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Waterproofing or weight?', neg:'Lighter', mid:'Either', pos:'More waterproof'},
-    tradeoff2:{question:'Durability or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'waterproofing', weightLight:'low weight', durability:'durability', comfort:'breathability', price:'price'},
     meta:p => [`${p.weight_oz} oz`, `${p.waterproofRating.toLocaleString()}mm`, `${p.layers}-layer`],
     altSpecs:p => `${p.weight_oz} oz · ${p.waterproofRating.toLocaleString()}mm · ${p.layers}-layer`,
@@ -1481,8 +1418,6 @@ const CATEGORIES = {
       comfort:{label:'Out-of-box comfort', hint:'How it feels before breaking in', field:'comfort', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Support or weight?', neg:'Lighter', mid:'Either', pos:'More support'},
-    tradeoff2:{question:'Durability or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'support', weightLight:'low weight', durability:'durability', comfort:'comfort', price:'price'},
     meta:p => [`${p.weight_oz} oz/pair`, `Support ${p.support}/5`],
     altSpecs:p => `${p.weight_oz} oz/pair · Support ${p.support}/5`,
@@ -1515,8 +1450,6 @@ const CATEGORIES = {
       comfort:{label:'Battery life', hint:'Longer between charges or battery swaps', field:'batteryHours', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Brightness or weight?', neg:'Lighter', mid:'Either', pos:'Brighter'},
-    tradeoff2:{question:'Weather resistance or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'brightness', weightLight:'low weight', durability:'weather resistance', comfort:'battery life', price:'price'},
     meta:p => [`${p.lumens} lumens`, `${p.weight_oz} oz`, `${p.batteryHours} hr (low)`],
     altSpecs:p => `${p.lumens} lumens · ${p.weight_oz} oz · ${p.batteryHours} hr low`,
@@ -1545,8 +1478,6 @@ const CATEGORIES = {
       comfort:{label:'Ease of use', hint:'Simple to fill, clean, and use in the field', field:'comfort', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Flow rate or weight?', neg:'Lighter', mid:'Either', pos:'Faster flow'},
-    tradeoff2:{question:'Lifespan or price?', neg:'Cheaper', mid:'Either', pos:'Lasts longer'},
     contribLabel:{primary:'flow rate', weightLight:'low weight', durability:'lifespan', comfort:'ease of use', price:'price'},
     meta:p => [`${p.flowRate} L/min`, `${p.weight_oz} oz`, `${p.filterLife.toLocaleString()} L life`],
     altSpecs:p => `${p.flowRate} L/min · ${p.weight_oz} oz · ${p.filterLife.toLocaleString()} L life`,
@@ -1579,8 +1510,6 @@ const CATEGORIES = {
       comfort:{label:'Wind resistance', hint:'Keeps working when it\u2019s gusty', field:'windResistance', invert:false},
       price:{label:'Lower price', hint:'Save money over other features', field:'price', invert:true}
     },
-    tradeoff1:{question:'Wind resistance or weight?', neg:'Lighter', mid:'Either', pos:'More wind-proof'},
-    tradeoff2:{question:'Durability or price?', neg:'Cheaper', mid:'Either', pos:'Tougher'},
     contribLabel:{primary:'fast boiling', weightLight:'low weight', durability:'durability', comfort:'wind resistance', price:'price'},
     meta:p => [`${p.boilTime} min boil`, `${p.weight_oz} oz`, p.coldCapable ? 'cold-capable' : 'fair-weather'],
     altSpecs:p => `${p.boilTime} min boil · ${p.weight_oz} oz · ${p.coldCapable ? 'cold-capable' : 'fair-weather'}`,
@@ -1589,13 +1518,14 @@ const CATEGORIES = {
 };
 
 const CATEGORY_ORDER = ['pad','bag','tent','pack','jacket','shoes','headlamp','filter','stove'];
-const STEP_IDS = ['sizing','budget','tripType','extras','priorities','tradeoffs'];
+const STEP_IDS = ['sizing','budget','tripType','priorities'];
 
-const TRIP_TYPE_PRESETS = {
-  trial:   { price:5, durability:2 },
-  regular: { price:3, durability:3 },
-  longterm:{ price:2, durability:4 }
-};
+const TRIP_TYPE_BOOST = { trial:'price', regular:null, longterm:'durability' };
+const PRIORITY_KEYS = ['primary','weightLight','comfort'];
+
+// An answer counts four times as much as anything the person didn't mention.
+// Answers only ever raise a weight, so picking "Lighter" can't produce a heavier top pick.
+const ANSWER_BOOST = 4;
 
 // =====================================================================
 // STATE
@@ -1608,9 +1538,7 @@ let state = {
   tripType:'regular',
   includeUsed:false,
   includeAmazon:true,
-  weights:{ primary:3, weightLight:3, durability:3, comfort:3, price:3 },
-  tradeoff1:0,
-  tradeoff2:0
+  priorities:[]
 };
 
 // =====================================================================
@@ -1635,9 +1563,7 @@ function resetStateForCategory(key){
   state.tripType = 'regular';
   state.includeUsed = false;
   state.includeAmazon = true;
-  state.weights = { primary:3, weightLight:3, durability:3, comfort:3, price:3 };
-  state.tradeoff1 = 0;
-  state.tradeoff2 = 0;
+  state.priorities = [];
 }
 
 function switchCategory(key){
@@ -1701,9 +1627,7 @@ function renderStep(id){
   if(id === 'sizing') renderSizingStep(cfg);
   if(id === 'budget') renderBudgetStep(cfg);
   if(id === 'tripType') renderTripTypeStep();
-  if(id === 'extras') renderExtrasStep();
   if(id === 'priorities') renderPrioritiesStep(cfg);
-  if(id === 'tradeoffs') renderTradeoffsStep(cfg);
 }
 
 // ---------- STEP RENDERERS ----------
@@ -1736,8 +1660,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
     state.budget = parseInt(e.target.value,10);
     document.getElementById('budgetVal').textContent = '$'+state.budget;
   });
-  document.getElementById('includeAmazon').addEventListener('change', e=>{ state.includeAmazon = e.target.checked; });
-  document.getElementById('includeUsed').addEventListener('change', e=>{ state.includeUsed = e.target.checked; });
+  document.getElementById('includeAmazon').addEventListener('change', e=>{ state.includeAmazon = e.target.checked; renderResults(); });
+  document.getElementById('includeUsed').addEventListener('change', e=>{ state.includeUsed = e.target.checked; renderResults(); });
 });
 
 function renderTripTypeStep(){
@@ -1747,52 +1671,22 @@ function renderTripTypeStep(){
 }
 function selectTripType(val){
   state.tripType = val;
-  const preset = TRIP_TYPE_PRESETS[val];
-  state.weights.price = preset.price;
-  state.weights.durability = preset.durability;
   renderStep('tripType');
   setTimeout(()=>goToStep(3), 180);
 }
 
-function renderExtrasStep(){
-  document.getElementById('includeAmazon').checked = state.includeAmazon;
-  document.getElementById('includeUsed').checked = state.includeUsed;
-}
-
-const PRIORITY_CHOICES = [ {val:1,label:"Don't care"}, {val:3,label:'Somewhat'}, {val:5,label:'A lot'} ];
-
 function renderPrioritiesStep(cfg){
-  const wrap = document.getElementById('priorityRows');
-  wrap.innerHTML = ['primary','weightLight','durability','comfort','price'].map(key=>{
+  document.getElementById('priorityOptions').innerHTML = PRIORITY_KEYS.map(key=>{
     const a = cfg.attrs[key];
-    const segs = PRIORITY_CHOICES.map(c=>
-      `<div class="seg-btn${state.weights[key]===c.val?' selected':''}" onclick="setPriority('${key}',${c.val})">${c.label}</div>`
-    ).join('');
-    return `<div class="priority-row">
-      <div class="priority-label">${a.label}</div>
-      <div class="priority-hint">${a.hint}</div>
-      <div class="segmented">${segs}</div>
-    </div>`;
+    const picked = state.priorities.includes(key);
+    return `<button class="option-btn${picked?' selected':''}" aria-pressed="${picked}" onclick="togglePriority('${key}', this)">${a.label}<span class="opt-sub">${a.hint}</span></button>`;
   }).join('');
 }
-function setPriority(key, val){
-  state.weights[key] = val;
-  renderStep('priorities');
-}
-
-function renderTradeoffsStep(cfg){
-  document.getElementById('tradeoff1Q').textContent = cfg.tradeoff1.question;
-  document.getElementById('tradeoff2Q').textContent = cfg.tradeoff2.question;
-  const seg1 = document.getElementById('tradeoff1Seg');
-  const seg2 = document.getElementById('tradeoff2Seg');
-  const opts1 = [{v:-2,l:cfg.tradeoff1.neg},{v:0,l:cfg.tradeoff1.mid},{v:2,l:cfg.tradeoff1.pos}];
-  const opts2 = [{v:-2,l:cfg.tradeoff2.neg},{v:0,l:cfg.tradeoff2.mid},{v:2,l:cfg.tradeoff2.pos}];
-  seg1.innerHTML = opts1.map(o=>`<div class="seg-btn${state.tradeoff1===o.v?' selected':''}" onclick="setTradeoff(1,${o.v})">${o.l}</div>`).join('');
-  seg2.innerHTML = opts2.map(o=>`<div class="seg-btn${state.tradeoff2===o.v?' selected':''}" onclick="setTradeoff(2,${o.v})">${o.l}</div>`).join('');
-}
-function setTradeoff(n, val){
-  if(n===1) state.tradeoff1 = val; else state.tradeoff2 = val;
-  renderStep('tradeoffs');
+function togglePriority(key, btn){
+  const picked = !state.priorities.includes(key);
+  state.priorities = picked ? state.priorities.concat(key) : state.priorities.filter(k => k !== key);
+  btn.classList.toggle('selected', picked);
+  btn.setAttribute('aria-pressed', picked);
 }
 
 function quickPick(){
@@ -1807,7 +1701,7 @@ function goToResults(){
 }
 
 // =====================================================================
-// SCORING (unchanged logic from previous version)
+// SCORING
 // =====================================================================
 
 function usedVariant(p){
@@ -1830,6 +1724,14 @@ function usedVariant(p){
 
 function suitsTrip(cfg, p, sizingValue){
   return cfg.sizing.filter(p, sizingValue) && (!cfg.sizing.notOverkill || cfg.sizing.notOverkill(p, sizingValue));
+}
+
+function answerWeights(){
+  const weights = { primary:1, weightLight:1, durability:1, comfort:1, price:1 };
+  const tripBoost = TRIP_TYPE_BOOST[state.tripType];
+  if(tripBoost) weights[tripBoost] = ANSWER_BOOST;
+  state.priorities.forEach(key => { weights[key] = ANSWER_BOOST; });
+  return weights;
 }
 
 function computeResults(){
@@ -1859,19 +1761,10 @@ function computeResults(){
     pool = pool.concat(basePool.filter(p => p.source === 'brand').map(usedVariant));
   }
 
-  const base = state.weights;
+  const base = answerWeights();
   const sumBase = Object.values(base).reduce((a,b)=>a+b,0);
   let w = {};
   Object.keys(base).forEach(k => w[k] = base[k]/sumBase);
-
-  const shift1 = state.tradeoff1 * 0.05;
-  const shift2 = state.tradeoff2 * 0.05;
-  w.primary = Math.max(0, w.primary + shift1);
-  w.weightLight = Math.max(0, w.weightLight - shift1);
-  w.durability = Math.max(0, w.durability + shift2);
-  w.price = Math.max(0, w.price - shift2);
-  const sumAdj = Object.values(w).reduce((a,b)=>a+b,0);
-  Object.keys(w).forEach(k => w[k] = w[k]/sumAdj);
 
   const ranges = {};
   Object.keys(cfg.attrs).forEach(key=>{
@@ -1945,6 +1838,8 @@ function priceLinksFor(item){
 
 function renderResults(){
   const cfg = CATEGORIES[state.category];
+  document.getElementById('includeAmazon').checked = state.includeAmazon;
+  document.getElementById('includeUsed').checked = state.includeUsed;
   const results = computeResults();
   lastResults = results;
   const top = results[0];
@@ -1967,7 +1862,7 @@ function renderResults(){
   const topSaved = isSaved(top.id);
   const icon = CATEGORY_ICONS[state.category];
 
-  let html = `
+  const topHtml = `
     <div class="result-top">
       <div class="result-head">
         <div class="result-icon">${icon}</div>
@@ -2014,14 +1909,16 @@ function renderResults(){
 
   const withinBudget = rest.filter(item => !item.overBudget);
   const overBudget = rest.filter(item => item.overBudget);
+  let restHtml = '';
   if(withinBudget.length){
-    html += `<div class="section-label">Other options</div>` + withinBudget.map(altItemHtml).join('');
+    restHtml += `<div class="section-label">Other options</div>` + withinBudget.map(altItemHtml).join('');
   }
   if(overBudget.length){
-    html += `<div class="section-label">Over your budget</div>` + overBudget.map(altItemHtml).join('');
+    restHtml += `<div class="section-label">Over your budget</div>` + overBudget.map(altItemHtml).join('');
   }
 
-  document.getElementById('resultsContent').innerHTML = html;
+  document.getElementById('resultsTop').innerHTML = topHtml;
+  document.getElementById('resultsRest').innerHTML = restHtml;
 }
 
 // =====================================================================
