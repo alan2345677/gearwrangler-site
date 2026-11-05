@@ -429,6 +429,10 @@
   .gear-status.ok{ color:var(--moss); font-weight:600; }
   .gear-status.warn{ color:#8A4B1F; }
   .gear-editor{ padding:4px 0 16px; }
+  .tag-reader{ margin:6px 0 4px; }
+  .tag-fields{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .tag-fields label{ display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:600; flex:1; min-width:140px; }
+  .tag-text summary{ cursor:pointer; font-size:13px; color:var(--ink-soft); margin-top:8px; }
   .gear-editor .search-box{ width:100%; }
   .gear-result{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
   .gear-editor-row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
@@ -634,7 +638,7 @@
   </section>
 
   <footer class="site-footer">
-    <p>Your gear list stays in this browser. This site has no accounts or analytics. Fonts load from Google, and store links take you to other websites.</p>
+    <p>Your gear list stays in this browser, and tag photos are read on your device, never uploaded. This site has no accounts or analytics. Fonts load from Google, and store links take you to other websites.</p>
   </footer>
 
 </div>
@@ -2020,9 +2024,14 @@ function itemProduct(cat){
 function itemLevel(cat){
   const saved = kitState[cat];
   if(!saved) return -1;
-  if(saved.custom) return optionIndex(cat, saved.level);
+  if(saved.custom) return saved.specs ? tripLevel(cat, saved.specs) : optionIndex(cat, saved.level);
   const product = itemProduct(cat);
   return product ? tripLevel(cat, product) : -1;
+}
+// A listed product, or the numbers read from a tag.
+function itemSpecs(cat){
+  const saved = kitState[cat];
+  return itemProduct(cat) || (saved && saved.specs) || null;
 }
 function myGearLevels(){
   const levels = {};
@@ -2175,7 +2184,7 @@ function gearRow(cat, trips){
   } else if(single){
     if(!need) status = `<div class="gear-status">Not needed for this trip</div>`;
     else if(saved && meetsNeed(cat, level, need.required)) status = `<div class="gear-status ok">✓ Meets this trip's need</div>`;
-    else if(saved) status = `<div class="gear-status warn">✗ ${esc(shortfallText(cat, need.required, itemProduct(cat)))}</div>`;
+    else if(saved) status = `<div class="gear-status warn">✗ ${esc(shortfallText(cat, need.required, itemSpecs(cat)))}</div>`;
     else status = `<div class="gear-status">This trip needs ${esc(needPhrase(cat, need.text))}.</div>`;
   } else if(trips.length){
     const c = itemCoverage(cat, level, trips);
@@ -2183,13 +2192,13 @@ function gearRow(cat, trips){
       ? `<div class="gear-status${c.met === c.needed ? ' ok' : ''}">Meets the need on ${c.met} of ${c.needed} trips</div>`
       : `<div class="gear-status">Needed on ${c.needed} of ${trips.length} trips</div>`;
   }
-  const product = itemProduct(cat);
+  const product = itemSpecs(cat);
   if(product && !isBackpackable(cat, product) && !single){
     status = `<div class="gear-status warn">${esc(backpackingProblem(cat, product))} It doesn't count toward backpacking trips.</div>` + status;
   }
   let body;
   if(saved){
-    const price = saved.price == null ? "Added by what it's good for" : (saved.condition === 'used' ? `~$${saved.price} used` : `$${saved.price}`);
+    const price = saved.price == null ? (saved.specs ? 'Added from its tag' : "Added by what it's good for") : (saved.condition === 'used' ? `~$${saved.price} used` : `$${saved.price}`);
     const weight = saved.weight_oz ? ` · ${saved.weight_oz} oz` : '';
     const goodFor = level >= 0 ? `<div class="kit-specs">Good for: ${esc(CATEGORIES[cat].sizing.options[level].label)}</div>` : '';
     body = `<div class="kit-name">${esc(saved.name)}</div><div class="kit-specs">${esc(price)}${weight}${saved.source === 'amazon' ? ' · Amazon' : ''}</div>${goodFor}${status}`;
@@ -2218,7 +2227,12 @@ function gearEditor(cat, trips){
   const options = CATEGORIES[cat].sizing.options;
   const fitsWhat = !PERSONAL_GEAR.includes(cat) || !trips.length ? '' : (trips.length === 1 ? ' Each result shows whether it fits this trip.' : ' Each result shows how many trips it fits.');
   return `<div class="gear-editor">
-    <label class="plan-label" for="gearSearch">Search our list for your ${esc(gearLabel(cat).toLowerCase())}</label>
+    <div class="tag-reader">
+      <button class="btn secondary small" onclick="document.getElementById('tagPhoto').click()">Take a photo of the tag</button>
+      <input type="file" id="tagPhoto" accept="image/*" capture="environment" hidden onchange="readTagPhoto('${cat}', this)">
+      <div id="tagResult"></div>
+    </div>
+    <label class="plan-label" for="gearSearch">Or search our list for your ${esc(gearLabel(cat).toLowerCase())}</label>
     <input type="text" class="search-box" id="gearSearch" placeholder="Type a brand or model…" autocomplete="off" oninput="onGearSearch('${cat}', this.value)">
     <div id="gearSearchResults"><div class="search-hint">Start typing to search.${fitsWhat}</div></div>
     <label class="plan-label" for="ownLevel-${cat}">Not listed? ${BACKPACKING_MAX_OZ[cat] ? `If it's a backpacking ${esc(gearLabel(cat).toLowerCase())}, add` : 'Add'} it by what it's good for</label>
@@ -2240,11 +2254,159 @@ function onGearSearch(cat, query){
     box.innerHTML = `<div class="search-hint">No matches. Try another word, or add it by what it's good for below.</div>`;
     return;
   }
-  box.innerHTML = matches.map(p => `<div class="gear-result">
+  box.innerHTML = matches.map(p => gearResultHtml(cat, p, trips)).join('');
+}
+function gearResultHtml(cat, p, trips){
+  return `<div class="gear-result">
       <div><div class="kit-name">${esc(p.name)}</div><div class="kit-specs">$${p.price} · ${esc(CATEGORIES[cat].altSpecs(p))}</div>${productFitHtml(cat, p, trips)}</div>
       <button class="choose-btn" onclick="addOwnedProduct('${cat}','${esc(p.id)}')">I own this</button>
-    </div>`).join('');
+    </div>`;
 }
+// ---------- Reading a gear tag from a photo ----------
+// Text recognition runs in the visitor's browser (Tesseract.js), so photos are never uploaded.
+// The reader is only downloaded the first time someone uses it.
+let tesseractLoading = null;
+function loadTesseract(){
+  if(window.Tesseract) return Promise.resolve(window.Tesseract);
+  if(!tesseractLoading){
+    tesseractLoading = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+      script.onload = () => resolve(window.Tesseract);
+      script.onerror = () => { tesseractLoading = null; reject(new Error('Could not load the tag reader')); };
+      document.head.appendChild(script);
+    });
+  }
+  return tesseractLoading;
+}
+// Shrinks big phone photos and boosts contrast, which makes small tag text easier to read.
+async function prepareTagImage(file){
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.filter = 'grayscale(1) contrast(1.4)';
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+async function readTagPhoto(cat, input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const box = document.getElementById('tagResult');
+  box.innerHTML = `<div class="search-hint" role="status">Reading the tag… The first time takes a little longer.</div>`;
+  try{
+    const Tesseract = await loadTesseract();
+    const image = await prepareTagImage(file);
+    const { data } = await Tesseract.recognize(image, 'eng');
+    showTagReading(cat, data.text || '');
+  }catch(e){
+    box.innerHTML = `<div class="search-hint" role="status">Couldn't read that photo. Try again close up and in good light, or search by name below.</div>`;
+  }
+  input.value = '';
+}
+
+// The ratings Gear Wrangler checks, typed in or corrected by the person.
+const TAG_FIELDS = {
+  bag: [{key:'tempRating', label:'Comfort rating (°F)'}, {key:'weight_oz', label:'Weight (oz)'}],
+  pad: [{key:'rValue', label:'R-value'}, {key:'weight_oz', label:'Weight (oz)'}],
+  pack: [{key:'capacityL', label:'Capacity (liters)'}],
+  jacket: [{key:'waterproofRating', label:'Waterproof rating (mm)'}],
+  headlamp: [{key:'lumens', label:'Brightness (lumens)'}]
+};
+function parseTagSpecs(text){
+  const t = text.replace(/\s+/g, ' ');
+  const num = re => { const m = t.match(re); return m ? parseFloat(m[1].replace(/,/g, '')) : null; };
+  const toF = c => c == null ? null : Math.round(c * 9 / 5 + 32);
+  const specs = {};
+  // Gear Wrangler uses comfort ratings, so a labeled comfort rating wins.
+  let temp = num(/comfort[^0-9-]{0,15}(-?\d{1,2})\s*°?\s*F/i);
+  if(temp == null) temp = toF(num(/comfort[^0-9-]{0,15}(-?\d{1,2})\s*°?\s*C/i));
+  if(temp == null) temp = num(/(-?\d{1,2})\s*°\s*F\b/i);
+  if(temp == null) temp = toF(num(/(-?\d{1,2})\s*°\s*C\b/i));
+  if(temp != null) specs.tempRating = temp;
+  const r = num(/R\s*[-–]?\s*value[^0-9]{0,6}(\d{1,2}(?:\.\d)?)/i) ?? num(/\bR\s?(\d\.\d)\b/);
+  if(r != null && r <= 10) specs.rValue = r;
+  const liters = num(/\b(\d{2,3})\s?(?:L|liters?|litres?)\b/i);
+  if(liters != null && liters >= 10 && liters <= 120) specs.capacityL = liters;
+  const lumens = num(/\b(\d{2,4})\s?(?:lm|lumens?)\b/i);
+  if(lumens != null) specs.lumens = lumens;
+  const mm = num(/\b(\d{1,2},?\d{3})\s?mm\b/i);
+  if(mm != null) specs.waterproofRating = mm;
+  // Text readers often mistake "lb" for "Ib" and "oz" for "0z", so accept both.
+  const lbOz = t.match(/(\d+)\s*[lI1]bs?\.?\s*(\d+(?:\.\d+)?)\s*[o0]z/i);
+  let ounces = lbOz ? parseFloat(lbOz[1]) * 16 + parseFloat(lbOz[2]) : num(/(\d+(?:\.\d+)?)\s*[o0]z\b/i);
+  if(ounces == null){ const grams = num(/\b(\d{2,4})\s*g\b/i); if(grams != null) ounces = grams / 28.35; }
+  if(ounces == null){ const kg = num(/\b(\d(?:\.\d+)?)\s*kg\b/i); if(kg != null) ounces = kg * 35.27; }
+  if(ounces == null){ const lb = num(/\b(\d(?:\.\d+)?)\s*[lI1]bs?\b/i); if(lb != null) ounces = lb * 16; }
+  if(ounces != null) specs.weight_oz = Math.round(ounces * 10) / 10;
+  return specs;
+}
+// Words in product names that don't help tell one product from another.
+const TAG_GENERIC_WORDS = new Set(['sleeping','bag','pad','mat','the','and','with','for','men','mens','women','womens',
+  'jacket','rain','pack','backpack','boots','boot','shoe','shoes','headlamp','filter','stove','tent','insulated','air','ultralight']);
+function matchTagToProducts(cat, text){
+  const words = new Set(text.toLowerCase().match(/[a-z0-9]+/g) || []);
+  return allProducts(CATEGORIES[cat]).map(p => {
+    const tokens = (p.name.toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => !TAG_GENERIC_WORDS.has(w));
+    const hit = tokens.filter(w => words.has(w)).length;
+    return { p, hit, score: tokens.length ? hit / tokens.length : 0 };
+  }).filter(m => m.hit >= 2 || (m.hit >= 1 && m.score >= 0.75))
+    .sort((a, b) => b.score - a.score || b.hit - a.hit)
+    .slice(0, 3).map(m => m.p);
+}
+function showTagReading(cat, text){
+  const box = document.getElementById('tagResult');
+  if(!box) return;
+  const trips = planTrips();
+  const matches = matchTagToProducts(cat, text);
+  const specs = parseTagSpecs(text);
+  const fields = TAG_FIELDS[cat] || [];
+  let html = '';
+  if(matches.length){
+    html += `<div class="plan-label">Possible matches</div>` + matches.map(p => gearResultHtml(cat, p, trips)).join('');
+  } else {
+    html += `<div class="search-hint">We couldn't match this tag to a product we list.</div>`;
+  }
+  if(fields.length){
+    const found = fields.some(f => specs[f.key] != null);
+    html += `<div class="plan-label">${matches.length ? 'Or add it with what the tag says' : 'Add it with what the tag says'}</div>
+      ${found ? '' : `<p class="fine-print">We couldn't find the rating on the tag. Type it in if you know it.</p>`}
+      <div class="tag-fields">${fields.map(f => `<label>${esc(f.label)}<input type="number" step="any" class="owned-select" id="tag-${f.key}" value="${specs[f.key] != null ? specs[f.key] : ''}"></label>`).join('')}</div>
+      <button class="btn small" onclick="addOwnedFromTag('${cat}')">Add with these numbers</button>
+      <div id="tagError" class="gear-status warn" role="status"></div>`;
+  }
+  const snippet = text.replace(/\s+/g, ' ').trim().slice(0, 200);
+  html += `<details class="tag-text"><summary>What we read</summary><p class="fine-print">${esc(snippet || 'No text found.')}</p></details>`;
+  box.innerHTML = html;
+}
+function addOwnedFromTag(cat){
+  const fields = TAG_FIELDS[cat] || [];
+  const specs = {};
+  fields.forEach(f => {
+    const value = parseFloat(document.getElementById('tag-' + f.key).value);
+    if(!isNaN(value)) specs[f.key] = value;
+  });
+  if(specs[fields[0].key] == null){
+    const name = fields[0].label.replace(/ \(.*\)$/, '');
+    document.getElementById('tagError').textContent = `Add the ${/^R-/.test(name) ? name : name.toLowerCase()} first.`;
+    return;
+  }
+  if(cat === 'jacket') specs.durability = 3;
+  const level = gearLevel(cat, specs);
+  const summary = cat === 'bag' ? `rated ${specs.tempRating}°F` : cat === 'pad' ? `R-${specs.rValue}` :
+    cat === 'pack' ? `${specs.capacityL} liters` : cat === 'headlamp' ? `${specs.lumens} lumens` : `${specs.waterproofRating} mm`;
+  kitState[cat] = {
+    id:'owned-' + cat, name:`Your ${gearLabel(cat).toLowerCase()} (${summary})`, custom:true,
+    level: level >= 0 ? CATEGORIES[cat].sizing.options[level].value : null, specs,
+    price:null, weight_oz: specs.weight_oz || null, source:'owned', categoryLabel:CATEGORIES[cat].label
+  };
+  gearEditing = null;
+  gearChanged();
+  renderMySetup();
+}
+
 function productFitHtml(cat, product, trips){
   if(!PERSONAL_GEAR.includes(cat) || !trips.length) return '';
   const level = tripLevel(cat, product);
