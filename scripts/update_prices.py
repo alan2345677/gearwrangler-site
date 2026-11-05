@@ -70,8 +70,6 @@ OPTION_RULES = {
 SKIP = {
     "primus-express-spider": "store lists prices in Swedish kronor",
     "primus-primetech-1-3l": "store lists prices in Swedish kronor",
-    "hoka-speedgoat5": "only out-of-stock listings at this store",
-    "biolite-800": "store now sells the 800 Pro, a different model at a different price",
 }
 
 PRODUCT_PATTERN = re.compile(

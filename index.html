@@ -189,9 +189,6 @@
   .result-top h2{ font-size:23px; }
   .result-meta{ display:flex; flex-wrap:wrap; gap:6px 12px; margin:10px 0 12px; font-size:13.5px; color:var(--ink-soft); }
   .why{ font-size:14px; color:var(--ink); margin:8px 0 14px; line-height:1.5; }
-  .score-bar-track{ height:7px; background:var(--paper-dim); border-radius:4px; overflow:hidden; margin-bottom:4px; }
-  .score-bar-fill{ height:100%; background:var(--amber); border-radius:4px; }
-  .score-pct{ font-size:12.5px; color:var(--ink-soft); margin-bottom:12px; }
 
   .price-row{
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
@@ -207,8 +204,6 @@
   .alt-head .name{ font-weight:700; font-size:15px; }
   .alt-head .score{ font-size:12.5px; color:var(--ink-soft); white-space:nowrap; }
   .alt-specs{ font-size:12.5px; color:var(--ink-soft); margin-bottom:7px; }
-  .alt-bar-track{ height:5px; background:var(--paper-dim); border-radius:3px; overflow:hidden; }
-  .alt-bar-fill{ height:100%; background:var(--slate); border-radius:3px; }
   .alt-actions{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px 12px; margin-top:8px; }
   .alt-links a{ font-size:13px; color:var(--slate); text-decoration:none; border-bottom:1px solid var(--slate); white-space:nowrap; }
   .tag{ display:inline-block; font-size:11px; font-weight:700; padding:1px 6px; border-radius:3px; margin-left:5px; }
@@ -365,24 +360,7 @@
   .hero-choice-btn.primary{ background:var(--white); color:var(--ink); border-color:var(--white); }
   .hero-choice-btn.primary:hover{ background:#EDEBE4; }
   .hero-choice-btn .opt-sub{ display:block; font-size:12.5px; font-weight:400; margin-top:4px; opacity:.8; }
-  .hero-form{ display:flex; gap:10px; flex-wrap:wrap; }
-  .hero-select{
-    flex:1; min-width:220px; font-family:'Archivo',sans-serif; font-size:15px; font-weight:500;
-    padding:14px 16px; border-radius:6px; border:1.5px solid rgba(255,255,255,.5);
-    background:rgba(20,24,20,.35); color:var(--white); cursor:pointer;
-    appearance:none; -webkit-appearance:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23FFFFFF' stroke-width='1.6' fill='none'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 16px center;
-  }
-  .hero-select option{ background:var(--ink); color:var(--white); }
-  .hero-cta{
-    font-family:'Archivo',sans-serif; font-size:15px; font-weight:700;
-    padding:14px 26px; border-radius:6px; border:none;
-    background:var(--white); color:var(--ink); cursor:pointer;
-    transition:transform .12s ease, background .15s ease;
-  }
-  .hero-cta:hover{ background:#EDEBE4; }
-  .hero-cta:active{ transform:scale(.98); }
+  .hero-form{ display:flex; flex-direction:column; gap:12px; }
 
   .hero-empty-note{
     position:absolute; left:50%; top:40%; transform:translate(-50%,-50%);
@@ -425,6 +403,45 @@
     h1.question{ font-size:22px; }
     .big-value{ font-size:38px; }
   }
+
+  /* ============ EXPEDITION FINDER ============ */
+  .trip-card{ border:1.5px solid var(--line); border-radius:12px; padding:18px 18px 16px; margin-bottom:14px; background:var(--white); }
+  .trip-card.top{ border-color:var(--ink); }
+  .trip-card h2{ font-size:20px; margin:2px 0 8px; }
+  .trip-facts{ font-size:13.5px; color:var(--ink-soft); margin:6px 0 0; line-height:1.5; }
+  .trip-facts strong{ color:var(--ink); }
+  .trip-gear{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); font-size:14px; line-height:1.5; }
+  .trip-gear ul{ margin:6px 0 0; padding-left:18px; }
+  .trip-gear li{ margin:4px 0; }
+  .gear-note{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; }
+  .trip-links{ margin-top:12px; font-size:14px; }
+  .trip-links a, .text-link{ color:var(--ink); text-decoration:underline; cursor:pointer; }
+  .owned-row{ display:flex; flex-direction:column; gap:6px; padding:12px 0; border-bottom:1px solid var(--line); }
+  .owned-row label{ font-weight:700; font-size:15px; }
+  .owned-select{ font-family:inherit; font-size:14.5px; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--white); color:var(--ink); max-width:100%; }
+  .fine-print{ font-size:12.5px; color:var(--ink-soft); margin-top:12px; }
+  .finder-prompt{ font-size:14px; margin:4px 0 16px; }
+  .sort-toggle{ margin:4px 0 16px; }
+  button.seg-btn{ font-family:inherit; }
+  .fit-label{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+
+  /* ============ START: CATEGORY PICKER ============ */
+  .hero-content p.hero-form-label{ margin:0; font-weight:600; }
+  .hero-cat-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; max-width:520px; }
+  .hero-cat-btn{ font-family:inherit; font-size:14.5px; font-weight:600; padding:12px 10px; border-radius:10px; border:1.5px solid rgba(255,255,255,.35); background:rgba(255,255,255,.08); color:var(--white); cursor:pointer; }
+  .hero-cat-btn:hover{ background:rgba(255,255,255,.18); }
+  .hero-form-back{ align-self:flex-start; background:none; border:none; color:var(--white); opacity:.85; font-family:inherit; font-size:13.5px; text-decoration:underline; cursor:pointer; padding:4px 0; }
+
+  /* ============ KEYBOARD FOCUS ============ */
+  :focus-visible{ outline:3px solid var(--moss); outline-offset:2px; }
+  input[type=range]:focus-visible{ outline:3px solid var(--moss); }
+  [tabindex="-1"]:focus{ outline:none; }
+
+  @media(max-width:700px){
+    .cat-tabs{ flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+    .cat-tabs::-webkit-scrollbar{ display:none; }
+    .cat-tab{ flex-shrink:0; }
+  }
 </style>
 </head>
 <body>
@@ -433,7 +450,7 @@
   <!-- HERO LANDING -->
   <section class="screen active" id="screen-hero">
     <div class="hero-stage">
-      <video id="heroVideo" autoplay muted loop playsinline></video>
+      <video id="heroVideo" autoplay muted loop playsinline aria-hidden="true"></video>
       <div class="hero-topo" id="heroTopo" style="display:none;"></div>
       <div class="hero-overlay"></div>
       <p class="hero-empty-note" id="heroEmptyNote" style="display:none;">Background video unavailable</p>
@@ -447,12 +464,14 @@
         <h1>Gear that's actually right for you.</h1>
         <p id="heroSub">Tell Gear Wrangler what you need, and it'll take it from there.</p>
         <div class="hero-choice-row" id="heroChoiceRow">
-          <button class="hero-choice-btn primary" onclick="showHeroFindForm()">Find gear to buy<span class="opt-sub">Get matched to the right gear for you</span></button>
+          <button class="hero-choice-btn primary" onclick="openExpeditionFinder(true)">Find an expedition<span class="opt-sub">Match a Wharton trip to you and your gear</span></button>
+          <button class="hero-choice-btn" onclick="showHeroFindForm()">Find gear to buy<span class="opt-sub">Get matched to the right gear for you</span></button>
           <button class="hero-choice-btn" onclick="openGearCheck()">Check gear I'm considering<span class="opt-sub">See if it's right for a specific trip</span></button>
         </div>
         <div class="hero-form" id="heroFindForm" style="display:none;">
-          <select class="hero-select" id="heroCategorySelect"></select>
-          <button class="hero-cta" onclick="startFromHero()">Get started</button>
+          <p class="hero-form-label">What are you looking for?</p>
+          <div class="hero-cat-grid" id="heroCategoryGrid"></div>
+          <button class="hero-form-back" onclick="resetHeroChoice()">← Back</button>
         </div>
       </div>
     </div>
@@ -461,8 +480,28 @@
         <h2>Spend smarter on outdoor gear</h2>
         <p class="lead blurb">Outdoor gear is easy to overspend on and easy to get wrong. Gear Wrangler is built to help you make the best buying decision for you. It weighs price, weight, durability, and performance against your trip, your budget, and your priorities, so your money goes to gear that fits how you get outside.</p>
 
-        <h2>Two tools, one goal</h2>
-        <p class="lead">Buying gear well means solving two different problems: figuring out what to get in the first place, and knowing whether something you're already eyeing is actually right for your trip. Gear Wrangler does both.</p>
+        <h2>Three tools, one goal</h2>
+        <p class="lead">Gear Wrangler helps you choose a trip, buy what you need for it, and check what you already have.</p>
+
+        <div class="tool-section">
+          <div class="tool-label">Finding an expedition</div>
+          <h3 class="tool-title">For when you're choosing a trip</h3>
+          <p>Gear Wrangler keeps an up-to-date list of Wharton Leadership Ventures expeditions for undergraduates and MBA students. Tell it where you'd like to go and what you'd rather avoid, and it ranks the trips. Tell it what gear you own, and it shows which trips you're already equipped for.</p>
+          <div class="process-steps">
+            <div class="step">
+              <span class="step-num">1</span>
+              <div><h3>Pick your program and preferences</h3><p>Mountains or ocean, and anything you'd rather avoid, like cold weather or high altitude.</p></div>
+            </div>
+            <div class="step">
+              <span class="step-num">2</span>
+              <div><h3>Tell us what you already own</h3><p>Sleeping bag, pack, rain jacket, and more. This part is optional.</p></div>
+            </div>
+            <div class="step">
+              <span class="step-num">3</span>
+              <div><h3>See the trips that fit</h3><p>Each trip shows what your gear covers and what you'd still need.</p></div>
+            </div>
+          </div>
+        </div>
 
         <div class="tool-section">
           <div class="tool-label">Finding gear to buy</div>
@@ -488,12 +527,12 @@
         <div class="tool-section">
           <div class="tool-label">Checking gear you're considering</div>
           <h3 class="tool-title">For when you already have something in mind</h3>
-          <p>Sometimes you don't need a recommendation — you need a straight answer on something specific. Maybe you're eyeing a jacket a friend recommended, or something you already own, and want to know if it's actually right for your trip. This part of Gear Wrangler is built for that: trip conditions are set once, and you can check any item against them.</p>
+          <p>Sometimes you don't need a recommendation — you need a straight answer on something specific. Maybe you're eyeing a jacket a friend recommended, or something you already own, and want to know if it's actually right for your trip. This part of Gear Wrangler is built for that: pick your trip, then check any item against its expected conditions.</p>
 
           <div class="process-steps">
             <div class="step">
               <span class="step-num">1</span>
-              <div><h3>An expedition gets set up once</h3><p>Coldest expected night, terrain, rain, budget guidance — entered by whoever's leading the trip.</p></div>
+              <div><h3>Pick your trip</h3><p>Expected conditions come from Wharton's trip listing and Gear Wrangler's climate estimates.</p></div>
             </div>
             <div class="step">
               <span class="step-num">2</span>
@@ -518,31 +557,15 @@
     </div>
   </div>
 
-  <!-- WELCOME -->
-  <section class="screen" id="screen-welcome">
-    <div class="q-wrap">
-      <h1 class="question" id="welcomeTitle">Find your sleeping pad.</h1>
-      <p class="subtext" id="welcomeSub">A few quick taps, then I'll show you the best match.</p>
-      <div class="hero-choice">
-        <button class="hero-btn primary" onclick="quickPick()">
-          Just show me a good pick
-          <span class="opt-sub">Skip the questions, use sensible defaults</span>
-        </button>
-        <button class="hero-btn secondary" onclick="goToStep(0)">
-          Answer a few quick questions
-          <span class="opt-sub">Just four questions, for a better match</span>
-        </button>
-      </div>
-    </div>
-  </section>
-
   <!-- STEP: SIZING -->
   <section class="screen" id="screen-sizing">
-    <span class="back-link" onclick="goToWelcome()">← Start over</span>
+    <span class="back-link" onclick="goToHero()">← Start over</span>
     <div class="q-wrap">
+      <div class="eyebrow" id="sizingTitle"></div>
       <h1 class="question" id="sizingQ"></h1>
       <p class="subtext" id="sizingHint"></p>
       <div class="option-list" id="sizingOptions"></div>
+      <span class="skip-link" onclick="quickPick()">Skip the questions and show me a good pick</span>
     </div>
   </section>
 
@@ -553,7 +576,7 @@
       <h1 class="question">What's your budget?</h1>
       <p class="subtext">The most you'd want to spend. We'll still show pricier picks, just marked.</p>
       <div class="big-value" id="budgetVal">$220</div>
-      <input type="range" id="budget" min="50" max="300" step="10" value="220">
+      <input type="range" id="budget" min="50" max="300" step="10" value="220" aria-label="Budget">
       <div class="range-ends"><span id="budgetMinLabel">$50</span><span id="budgetMaxLabel">$300</span></div>
       <button class="btn" style="margin-top:30px;" onclick="goToStep(2)">Next</button>
     </div>
@@ -586,12 +609,18 @@
 
   <!-- MY SETUP -->
   <section class="screen" id="screen-mysetup">
-    <span class="back-link" onclick="showWelcome()">← Back</span>
+    <span class="back-link" onclick="closeMySetup()">← Back</span>
     <h1 class="question" style="margin-top:6px;">Your setup.</h1>
     <p class="subtext">One pick per category. Tap any row to change it.</p>
     <div id="kitTotals"></div>
     <div id="kitRows"></div>
     <button class="btn secondary" style="margin-top:22px;" onclick="clearKit()">Clear all</button>
+  </section>
+
+  <!-- EXPEDITION FINDER -->
+  <section class="screen" id="screen-expeditions">
+    <span class="back-link" id="expeditionBack" onclick="expeditionBack()">← Back</span>
+    <div id="expeditionContent"></div>
   </section>
 
   <!-- GEAR CHECK -->
@@ -690,10 +719,6 @@ const PADS = [
     price:200, weight_oz:43, rValue:4.8, thickness_in:3.5, durability:3,
     priceUrl:'https://www.bigagnes.com/products/rapide-sl-insulated', priceAsOf:'Sep 2026',
     blurb:'The only double-wide pad here; great for shared tents, heavier and bulkier solo.' },
-  { id:'rei-helix-insulated', name:'REI Co-op Helix Insulated', type:'Insulated air', source:'brand',
-    price:170, weight_oz:20, rValue:4.9, thickness_in:3.5, durability:3,
-    priceUrl:'https://www.rei.com/product/202288/rei-co-op-helix-insulated-air-sleeping-pad', priceAsOf:'Sep 2026',
-    blurb:'Gridded baffles distribute weight well; a warmer step up from REI\u2019s old budget pad.' },
   { id:'thermarest-neoloft', name:'Therm-a-Rest NeoLoft', type:'Insulated air', source:'brand',
     price:220, weight_oz:26, rValue:4.5, thickness_in:5.0, durability:3,
     priceUrl:'https://cascadedesigns.com/products/neoloft-sleeping-pad', priceAsOf:'Sep 2026',
@@ -735,18 +760,14 @@ const BAGS = [
     price:405, weight_oz:19, tempRating:32, durability:3, comfort:3, fill:'850+ fill down',
     priceUrl:'https://www.westernmountaineering.com/summerlite', priceAsOf:'Sep 2026',
     blurb:'Remarkably light for a fully-baffled bag; fits snug.' },
-  { id:'rei-magma-15', name:'REI Co-op Magma 15', source:'brand',
-    price:399, weight_oz:36, tempRating:21, durability:4, comfort:5, fill:'850 fill down',
-    priceUrl:'https://www.rei.com/product/228704/rei-co-op-magma-15-sleeping-bag', priceAsOf:'Sep 2026',
-    blurb:'Widest range of sizes we know of, and a genuinely refined fit; a great value at this warmth.' },
   { id:'seatosummit-spark-15', name:'Sea to Summit Spark 15', source:'brand',
     price:450, weight_oz:25.7, tempRating:15, durability:3, comfort:4, fill:'Ultra-dry down',
     priceUrl:'https://seatosummit.com/products/spark-down-sleeping-bag', priceAsOf:'Sep 2026',
     blurb:'Very warm for its weight; a strong pick for cold sleepers who still want to stay light.' },
-  { id:'marmot-trestles-30', name:'Marmot Trestles 30', source:'brand',
-    price:130, weight_oz:47, tempRating:30, durability:4, comfort:4, fill:'Synthetic',
-    priceUrl:'https://www.marmot.com/p/trestles-elite-eco-30-sleeping-bag/SP_2948365/AFS_195115321598.html', priceAsOf:'Sep 2026',
-    blurb:'Roomy, affordable, name-brand synthetic bag — a sensible step up from pure budget gear.' },
+  { id:'marmot-trestles-elite-eco-30', name:'Marmot Trestles Elite Eco 30', source:'brand',
+    price:179, weight_oz:41.6, tempRating:32, durability:4, comfort:4, fill:'Synthetic',
+    priceUrl:'https://www.marmot.com/p/trestles-elite-eco-30-sleeping-bag/SP_2948365/AFS_195115321598.html', priceAsOf:'Nov 2026',
+    blurb:'Roomy, name-brand synthetic bag that keeps insulating when damp; heavier than down.' },
   { id:'kelty-cosmic-20', name:'Kelty Cosmic 20', source:'brand',
     price:180, weight_oz:39, tempRating:31, durability:4, comfort:3, fill:'550 fill down',
     priceUrl:'https://kelty.com/products/cosmic-down-20', priceAsOf:'Sep 2026',
@@ -820,10 +841,6 @@ const TENTS = [
     price:650, weight_oz:71, durability:4, weatherProof:4, floorArea:40, doors:2, freestanding:true,
     priceUrl:'https://www.nemoequipment.com/products/dagger-osmo', priceAsOf:'Sep 2026',
     blurb:'The 3-person version of the Dagger; makes full use of every added ounce.' },
-  { id:'rei-halfdome-sl2plus', name:'REI Co-op Half Dome SL 2+', source:'brand', capacity:2,
-    price:299, weight_oz:75.5, durability:4, weatherProof:4, floorArea:31.4, doors:2, freestanding:true,
-    priceUrl:'https://www.rei.com/product/185632/rei-co-op-half-dome-sl-2-tent-with-footprint', priceAsOf:'Sep 2026',
-    blurb:'Best-value 2P tent for most people: durable, roomy, and comes with a footprint.' },
   { id:'rei-halfdome-3plus', name:'REI Co-op Half Dome 3 Plus', source:'brand', capacity:3,
     price:349, weight_oz:112, durability:4, weatherProof:4, floorArea:42, doors:2, freestanding:true,
     priceUrl:'https://www.rei.com/b/rei-co-op/f/pl-half-dome', priceAsOf:'Sep 2026',
@@ -886,17 +903,13 @@ const PACKS = [
     priceUrl:'https://www.granitegear.com/outdoor/backpacks/multi-day-backpacks/crown3-60-pack.html', priceAsOf:'Sep 2026',
     blurb:'Excellent value: light, adjustable, and comfortable for the price.' },
   { id:'gregory-baltoro-75', name:'Gregory Baltoro 75', source:'brand', capacityL:75,
-    price:370, weight_oz:80, maxLoad_lbs:55, durability:5, comfort:5,
-    priceUrl:'https://www.gregory.com/packs/backpacking/baltoro-75/157BAL75.html', priceAsOf:'Sep 2026',
+    price:400, weight_oz:85.4, maxLoad_lbs:55, durability:5, comfort:5,
+    priceUrl:'https://www.gregory.com/packs/backpacking/baltoro-75/157BAL75.html', priceAsOf:'Nov 2026',
     blurb:'A heavy hauler built for big loads — expedition or guiding-grade comfort and durability.' },
   { id:'osprey-atmos-ag65', name:'Osprey Atmos AG 65', source:'brand', capacityL:65,
     price:370, weight_oz:71, maxLoad_lbs:40, durability:4, comfort:5,
     priceUrl:'https://www.osprey.com/atmos-ag-65-atmos65s22-415', priceAsOf:'Nov 2026',
     blurb:'Anti-Gravity suspension that genuinely disappears on your back; a top comfort pick.' },
-  { id:'rei-trailmade-60', name:'REI Co-op Trailmade 60', source:'brand', capacityL:60,
-    price:179, weight_oz:72, maxLoad_lbs:35, durability:4, comfort:3,
-    priceUrl:'https://www.rei.com/product/237422/rei-co-op-trailmade-60-pack-mens', priceAsOf:'Sep 2026',
-    blurb:'Built for beginners: durable, straightforward, well below the price of premium packs.' },
   { id:'ula-circuit', name:'ULA Circuit', source:'brand', capacityL:68,
     price:300, weight_oz:41, maxLoad_lbs:35, durability:4, comfort:5,
     priceUrl:'https://www.ula-equipment.com/circuit', priceAsOf:'Sep 2026',
@@ -925,10 +938,6 @@ const PACKS = [
     price:260, weight_oz:48, maxLoad_lbs:40, durability:4, comfort:4,
     priceUrl:'https://www.gregory.com/packs/backpacking/paragon-60/1523PAR60.html', priceAsOf:'Sep 2026',
     blurb:'Lighter and cheaper than the big Osprey haulers while still carrying a real load comfortably.' },
-  { id:'mysteryranch-glacier', name:'Mystery Ranch Glacier', source:'brand', capacityL:73,
-    price:430, weight_oz:102, maxLoad_lbs:80, durability:5, comfort:4,
-    priceUrl:'https://www.mysteryranch.com/Packs/Outdoor/Snow-Packs', priceAsOf:'Sep 2026',
-    blurb:'Built to haul genuinely heavy loads without complaint; among the heaviest packs here.' }
 ];
 const AMAZON_PACKS = [
   { id:'teton-scout-3400', name:'TETON Sports Scout 3400', source:'amazon', capacityL:55,
@@ -987,8 +996,8 @@ const JACKETS = [
     priceUrl:'https://www.outdoorresearch.com/products/mens-skychaser-jacket-322682', priceAsOf:'Sep 2026',
     blurb:'Built specifically for backpacking loads — good balance of weight, durability, and protection.' },
   { id:'mammut-ducan-light', name:'Mammut Ducan Light Hardshell', source:'brand',
-    price:300, weight_oz:6.8, waterproofRating:15000, layers:2, durability:3, comfort:3,
-    priceUrl:'https://www.mammut.com/us/en/products/1010-31470/ducan-light-hs-hooded-jacket-men', priceAsOf:'Sep 2026',
+    price:189, weight_oz:6.8, waterproofRating:15000, layers:2, durability:3, comfort:3,
+    priceUrl:'https://www.mammut.com/us/en/products/1010-31470/ducan-light-hs-hooded-jacket-men', priceAsOf:'Nov 2026',
     blurb:'Very light 2.5-layer shell for fast-and-light trips; less durable than heavier 3-layer jackets.' }
 ];
 const AMAZON_JACKETS = [
@@ -1023,9 +1032,9 @@ const SHOES = [
     price:185, weight_oz:30, support:3, durability:3, comfort:4,
     priceUrl:'https://www.merrell.com/US/en/moab-speed-2-mid-gore-tex/58707M.html', priceAsOf:'Nov 2026',
     blurb:'A nimble, trail-runner-inspired boot for fast and light backpacking.' },
-  { id:'hoka-speedgoat5', name:'HOKA Speedgoat 5', source:'brand',
-    price:155, weight_oz:20, support:1, durability:2, comfort:5,
-    priceUrl:'https://www.marathonsports.com/products/hoka-mens-speedgoat-5', priceAsOf:'Sep 2026',
+  { id:'hoka-speedgoat6', name:'HOKA Speedgoat 6', source:'brand',
+    price:155, weight_oz:19.6, support:1, durability:2, comfort:5,
+    priceUrl:'https://www.hoka.com/en/us/mens-trail/speedgoat-6/1147791.html', priceAsOf:'Nov 2026',
     blurb:'Max-cushion trail runner for fast, light days without a heavy pack.' },
   { id:'lowa-renegade-evo', name:'LOWA Renegade EVO GTX', source:'brand',
     price:230, weight_oz:40, support:5, durability:5, comfort:4,
@@ -1061,7 +1070,7 @@ const AMAZON_SHOES = [
 
 const HEADLAMPS = [
   { id:'nitecore-nu25', name:'Nitecore NU25', source:'brand',
-    price:37, weight_oz:1.0, lumens:400, waterRating:4, batteryHours:160, comfort:4,
+    price:37, weight_oz:1.8, lumens:400, waterRating:4, batteryHours:160, comfort:4,
     priceUrl:'https://www.nitecore.com/product/nu25', priceAsOf:'Sep 2026',
     blurb:'A thru-hiker favorite: 1 ounce, reliable, and plenty bright for backpacking.' },
   { id:'nitecore-nu27', name:'Nitecore NU27', source:'brand',
@@ -1088,10 +1097,6 @@ const HEADLAMPS = [
     price:30, weight_oz:0.9, lumens:26, waterRating:3, batteryHours:45, comfort:2,
     priceUrl:'https://www.petzl.com/int/en/sport/products/emergency-headlamps/elite/ePlusLITE_SPO_a2mw0000000Y9BtAAK.html', priceAsOf:'Sep 2026',
     blurb:'Tiny emergency backup that lives in the bottom of your pack — not a main light.' },
-  { id:'biolite-800', name:'BioLite 800', source:'brand',
-    price:60, weight_oz:2.6, lumens:800, waterRating:4, batteryHours:13, comfort:4,
-    priceUrl:'https://www.bioliteenergy.com/products/headlamp-800-pro', priceAsOf:'Sep 2026',
-    blurb:'Light, well-balanced on the head, and genuinely bright for the price.' },
   { id:'blackdiamond-distance-lt-1100', name:'Black Diamond Distance LT 1100', source:'brand',
     price:100, weight_oz:3.8, lumens:1100, waterRating:3, batteryHours:14, comfort:3,
     priceUrl:'https://blackdiamondequipment.com/products/distance-lt-1100-headlamp', priceAsOf:'Sep 2026',
@@ -1114,11 +1119,11 @@ const AMAZON_HEADLAMPS = [
 
 const FILTERS = [
   { id:'sawyer-squeeze', name:'Sawyer Squeeze', source:'brand',
-    price:40, weight_oz:3, flowRate:1.0, filterLife:378000, comfort:3, groupSize:2,
-    priceUrl:'https://sawyer.com/products/squeeze-water-filtration-system', priceAsOf:'Sep 2026',
+    price:46, weight_oz:3, flowRate:1.0, filterLife:378000, comfort:3, groupSize:2,
+    priceUrl:'https://www.sawyer.com/product/squeeze-water-filter-system', priceAsOf:'Nov 2026',
     blurb:'Effectively lasts forever (100,000 gallons); the long-term value pick.' },
   { id:'katadyn-befree-1l', name:'Katadyn BeFree 1L', source:'brand',
-    price:45, weight_oz:2.3, flowRate:2.0, filterLife:1000, comfort:5, groupSize:1,
+    price:45, weight_oz:2.6, flowRate:2.0, filterLife:1000, comfort:5, groupSize:1,
     priceUrl:'https://katadyn.com/en-us/products/8020426-katadyn-befree-1-0l-black-edition', priceAsOf:'Sep 2026',
     blurb:'About the easiest filter to use — dunk, screw on, drink. Shorter lifespan.' },
   { id:'platypus-quickdraw', name:'Platypus QuickDraw', source:'brand',
@@ -1146,7 +1151,7 @@ const FILTERS = [
     priceUrl:'https://katadyn.com/collections/befree-gravity', priceAsOf:'Sep 2026',
     blurb:'Fully hands-free gravity filtering for a whole group at once.' },
   { id:'katadyn-hiker-pro', name:'Katadyn Hiker Pro', source:'brand',
-    price:90, weight_oz:11, flowRate:1.0, filterLife:750, comfort:3, groupSize:2,
+    price:90, weight_oz:8.2, flowRate:1.0, filterLife:750, comfort:3, groupSize:2,
     priceUrl:'https://katadyn.com/en-us/products/8019857-katadyn-hiker-pro-transparent-filter-usa', priceAsOf:'Sep 2026',
     blurb:'Reliable pump filter under $100; more physical effort than a squeeze or gravity system.' },
   { id:'grayl-geopress', name:'GRAYL GeoPress', source:'brand',
@@ -1194,10 +1199,6 @@ const STOVES = [
     price:90, weight_oz:8.2, boilTime:4.8, durability:4, windResistance:4, coldCapable:true,
     priceUrl:'https://primusequipment.com/en/products/express-spider-stove', priceAsOf:'Sep 2026',
     blurb:'A remote-canister design that performs better in the cold than upright stoves.' },
-  { id:'jetboil-minimo', name:'Jetboil MiniMo', source:'brand',
-    price:150, weight_oz:14.6, boilTime:2.25, durability:4, windResistance:4, coldCapable:true,
-    priceUrl:'https://jetboil.johnsonoutdoors.com/us/shop/stoves-systems/precision-cook', priceAsOf:'Sep 2026',
-    blurb:'Wide-mouth integrated cup that actually works for real cooking, not just boiling water.' },
   { id:'primus-primetech-1-3l', name:'Primus PrimeTech Stove System 1.3L', source:'brand',
     price:210, weight_oz:32, boilTime:4.0, durability:4, windResistance:4, coldCapable:true,
     priceUrl:'https://primusequipment.com/en/products/primetech-stove-set-1-3l', priceAsOf:'Sep 2026',
@@ -1206,10 +1207,6 @@ const STOVES = [
     price:45, weight_oz:2.6, boilTime:3.5, durability:3, windResistance:3, coldCapable:false,
     priceUrl:'https://cascadedesigns.com/products/pocketrocket-2-stove', priceAsOf:'Sep 2026',
     blurb:'The budget sibling of the Deluxe — no pressure regulator, but very light and reliable.' },
-  { id:'coleman-fyrestorm', name:'Coleman FyreStorm', source:'brand',
-    price:100, weight_oz:17.1, boilTime:5.0, durability:3, windResistance:4, coldCapable:false,
-    priceUrl:'https://www.coleman.com/fyrestorm-stove-system', priceAsOf:'Sep 2026',
-    blurb:'Hose-fed design keeps it stable in wind; heavier than most canister-top stoves.' },
   { id:'snowpeak-litemax', name:'Snow Peak LiteMax', source:'brand',
     price:45, weight_oz:1.9, boilTime:5.5, durability:3, windResistance:2, coldCapable:false,
     priceUrl:'https://www.snowpeak.com/products/litemax-titanium-stove', priceAsOf:'Nov 2026',
@@ -1549,10 +1546,13 @@ function buildTabs(){
   const el = document.getElementById('catTabs');
   const kitCount = Object.values(kitState).filter(Boolean).length;
   el.innerHTML = CATEGORY_ORDER.map(key =>
-    `<button class="cat-tab${key===state.category?' active':''}" onclick="switchCategory('${key}')">${CATEGORIES[key].label}</button>`
+    `<button class="cat-tab" data-cat="${key}" onclick="switchCategory('${key}')">${CATEGORIES[key].label}</button>`
   ).join('')
-  + `<button class="cat-tab cat-tab-kit" onclick="openGearCheck()">Check your gear</button>`
-  + `<button class="cat-tab cat-tab-kit" onclick="openMySetup()">My setup (<span id="kitTabCount">${kitCount}</span>)</button>`;
+  + `<button class="cat-tab cat-tab-kit" data-screen="expeditions" onclick="openExpeditionFinder()">Find an expedition</button>`
+  + `<button class="cat-tab cat-tab-kit" data-screen="gearcheck" onclick="openGearCheck()">Check your gear</button>`
+  + `<button class="cat-tab cat-tab-kit" data-screen="mysetup" onclick="openMySetup()">My setup (<span id="kitTabCount">${kitCount}</span>)</button>`;
+  const current = document.querySelector('.screen.active');
+  markActiveTab(current ? current.id.replace('screen-', '') : 'hero');
 }
 
 function resetStateForCategory(key){
@@ -1569,7 +1569,7 @@ function resetStateForCategory(key){
 function switchCategory(key){
   resetStateForCategory(key);
   buildTabs();
-  showWelcome();
+  goToStep(0);
 }
 
 function showScreen(id){
@@ -1577,6 +1577,23 @@ function showScreen(id){
   document.getElementById('screen-'+id).classList.add('active');
   document.body.classList.toggle('hero-mode', id === 'hero');
   window.scrollTo({top:0, behavior:'smooth'});
+  if(id !== 'hero') focusHeading(document.getElementById('screen-'+id));
+  markActiveTab(id);
+}
+
+// Highlights the tab for what's on screen: a gear category, or one of the other tools.
+function markActiveTab(screenId){
+  const onGearFinder = STEP_IDS.includes(screenId) || screenId === 'results';
+  document.querySelectorAll('#catTabs .cat-tab').forEach(tab => {
+    const on = tab.dataset.cat ? (onGearFinder && tab.dataset.cat === state.category) : tab.dataset.screen === screenId;
+    tab.classList.toggle('active', on);
+    if(on) tab.setAttribute('aria-current', 'true'); else tab.removeAttribute('aria-current');
+  });
+  const active = document.querySelector('#catTabs .cat-tab.active');
+  const row = document.getElementById('catTabs');
+  if(active && row.scrollWidth > row.clientWidth){
+    row.scrollLeft = active.offsetLeft - row.clientWidth / 2 + active.offsetWidth / 2;
+  }
 }
 
 function goToHero(){
@@ -1595,6 +1612,8 @@ function resetHeroChoice(){
 function showHeroFindForm(){
   document.getElementById('heroChoiceRow').style.display = 'none';
   document.getElementById('heroFindForm').style.display = 'flex';
+  const first = document.querySelector('#heroCategoryGrid button');
+  if(first) first.focus();
 }
 
 function updateProgress(stepIndex){
@@ -1606,12 +1625,6 @@ function updateProgress(stepIndex){
   document.getElementById('progressLabel').textContent = (stepIndex+1)+' / '+total;
 }
 
-function showWelcome(){
-  const cfg = CATEGORIES[state.category];
-  document.getElementById('welcomeTitle').textContent = cfg.welcomeTitle;
-  updateProgress(null);
-  showScreen('welcome');
-}
 
 function goToStep(index){
   const id = STEP_IDS[index];
@@ -1620,7 +1633,6 @@ function goToStep(index){
   showScreen(id);
 }
 
-function goToWelcome(){ showWelcome(); }
 
 function renderStep(id){
   const cfg = CATEGORIES[state.category];
@@ -1633,6 +1645,7 @@ function renderStep(id){
 // ---------- STEP RENDERERS ----------
 
 function renderSizingStep(cfg){
+  document.getElementById('sizingTitle').textContent = cfg.welcomeTitle;
   document.getElementById('sizingQ').textContent = cfg.sizing.question;
   document.getElementById('sizingHint').textContent = cfg.sizing.hint;
   const wrap = document.getElementById('sizingOptions');
@@ -1651,6 +1664,7 @@ function renderBudgetStep(cfg){
   const input = document.getElementById('budget');
   input.min = b.min; input.max = b.max; input.step = b.step;
   input.value = state.budget;
+  input.setAttribute('aria-valuetext', '$'+state.budget);
   document.getElementById('budgetVal').textContent = '$'+state.budget;
   document.getElementById('budgetMinLabel').textContent = '$'+b.min;
   document.getElementById('budgetMaxLabel').textContent = '$'+b.max;
@@ -1659,6 +1673,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('budget').addEventListener('input', e=>{
     state.budget = parseInt(e.target.value,10);
     document.getElementById('budgetVal').textContent = '$'+state.budget;
+    e.target.setAttribute('aria-valuetext', '$'+state.budget);
   });
   document.getElementById('includeAmazon').addEventListener('change', e=>{ state.includeAmazon = e.target.checked; renderResults(); });
   document.getElementById('includeUsed').addEventListener('change', e=>{ state.includeUsed = e.target.checked; renderResults(); });
@@ -1836,6 +1851,15 @@ function priceLinksFor(item){
   return `<a href="${item.priceUrl}" target="_blank" rel="noopener">${item.source === 'amazon' ? 'Amazon' : 'Check price'} →</a>`;
 }
 
+// Scores only mean something relative to the other options shown, so describe the gap in words.
+function fitLabel(item, top){
+  if(top.overBudget) return '';
+  const gap = top.total - item.total;
+  if(gap <= 0.03) return 'Almost as good a match';
+  if(gap <= 0.10) return 'Good match';
+  return 'Weaker match';
+}
+
 function renderResults(){
   const cfg = CATEGORIES[state.category];
   document.getElementById('includeAmazon').checked = state.includeAmazon;
@@ -1865,16 +1889,14 @@ function renderResults(){
   const topHtml = `
     <div class="result-top">
       <div class="result-head">
-        <div class="result-icon">${icon}</div>
+        <div class="result-icon" aria-hidden="true">${icon}</div>
         <div>
-          <div class="eyebrow">Top match</div>
+          <div class="eyebrow">${results.length === 1 ? 'The only option that fits' : 'Top match'}</div>
           <h2>${top.name}${badgeFor(top)}</h2>
         </div>
       </div>
       <div class="result-meta">${metaChips}</div>
       <p class="why">${why} ${top.blurb}</p>
-      <div class="score-bar-track"><div class="score-bar-fill" style="width:${(top.total*100).toFixed(0)}%"></div></div>
-      <div class="score-pct">${(top.total*100).toFixed(0)}% match</div>
       <div class="price-row">
         <div>${priceLine}</div>
         ${priceLinksFor(top)}
@@ -1889,14 +1911,14 @@ function renderResults(){
     return `
       <div class="alt-item">
         <div class="alt-row">
-          <div class="alt-icon">${icon}</div>
+          <div class="alt-icon" aria-hidden="true">${icon}</div>
           <div class="alt-body">
             <div class="alt-head">
               <span class="name">${item.name}${badgeFor(item)}${item.overBudget ? '<span class="tag tag-budget">over budget</span>' : ''}</span>
-              <span class="score">${(item.total*100).toFixed(0)}% · ${priceText}${wasPriceHtml(item)}</span>
+              <span class="score">${priceText}${wasPriceHtml(item)}</span>
             </div>
             <div class="alt-specs">${cfg.altSpecs(item)}</div>
-            <div class="alt-bar-track"><div class="alt-bar-fill" style="width:${(item.total*100).toFixed(0)}%"></div></div>
+            ${item.overBudget ? '' : `<div class="fit-label">${fitLabel(item, top)}</div>`}
             <div class="alt-actions">
               <span class="save-link${saved?' saved':''}" onclick="saveToKit('${item.id}')">${saved ? '✓ Saved' : 'Save to my setup'}</span>
               <span class="alt-links">${priceLinksFor(item)}</span>
@@ -1991,7 +2013,10 @@ function updateKitButton(){
   if(heroCount) heroCount.textContent = count;
 }
 
+let setupReturnTo = 'hero';
 function openMySetup(){
+  const current = document.querySelector('.screen.active');
+  if(current && current.id !== 'screen-mysetup') setupReturnTo = current.id.replace('screen-', '');
   updateProgress(null);
   renderMySetup();
   showScreen('mysetup');
@@ -2051,17 +2076,12 @@ function renderMySetup(){
 // HERO LANDING — category dropdown + background video (persisted via IndexedDB)
 // =====================================================================
 
-function buildHeroSelect(){
-  const sel = document.getElementById('heroCategorySelect');
-  sel.innerHTML = '<option value="" disabled selected>What are you looking for?</option>' +
-    CATEGORY_ORDER.map(key => `<option value="${key}">${CATEGORIES[key].label}</option>`).join('');
+function buildHeroCategories(){
+  document.getElementById('heroCategoryGrid').innerHTML = CATEGORY_ORDER.map(key =>
+    `<button class="hero-cat-btn" onclick="switchCategory('${key}')">${CATEGORIES[key].label}</button>`
+  ).join('');
 }
 
-function startFromHero(){
-  const sel = document.getElementById('heroCategorySelect');
-  const key = sel.value || CATEGORY_ORDER[0];
-  switchCategory(key);
-}
 
 // --- Background video ---
 function initHeroVideo(){
@@ -2075,6 +2095,11 @@ function initHeroVideo(){
   });
 
   video.src = 'data:video/mp4;base64,' + DEFAULT_HERO_VIDEO_B64;
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){
+    video.removeAttribute('autoplay');
+    video.pause();
+    return;
+  }
   video.play().catch(()=>{});
 }
 
@@ -2172,8 +2197,8 @@ function failReason(catKey, exp, candidate){
 // climate data (Hornopiren/Comau Fjord area for Vodudahue; San Pedro de Atacama +
 // high-altitude excursions for Atacama). Tent/filter/stove fields are set to reasonable
 // defaults but don't matter in practice since guides supply that group gear.
-// This is fixed data, not something loaded or edited at runtime.
-const EXPEDITIONS = {
+// These two are only a fallback: normally the list comes from expeditions.json.
+let EXPEDITIONS = {
   vodudahue: {
     id: 'vodudahue',
     name: 'Vodudahue Cloud Forest (Dec 28 \u2013 Jan 5)',
@@ -2224,6 +2249,10 @@ function gearCheckBack(){
 }
 
 function renderGearCheck(){
+  renderGearCheckStep();
+  focusHeading(document.getElementById('screen-gearcheck'));
+}
+function renderGearCheckStep(){
   const el = document.getElementById('gearCheckContent');
   if(gearCheck.step === 'expedition') return renderGearCheckExpeditionStep(el);
   if(gearCheck.step === 'category') return renderGearCheckCategoryStep(el);
@@ -2238,10 +2267,13 @@ const PARTICIPANT_CHECK_CATEGORIES = CATEGORY_ORDER.filter(k => !['tent','filter
 
 function renderGearCheckExpeditionStep(el){
   const ids = Object.keys(EXPEDITIONS);
-  let html = `<h1 class="question">Which trip?</h1><p class="subtext">Gear gets checked against that trip's specific conditions.</p>`;
-  html += `<div class="option-list">` + ids.map(id=>
-    `<button class="option-btn" onclick="pickExpeditionForCheck('${id}')">${EXPEDITIONS[id].name}<span class="opt-sub">~${EXPEDITIONS[id].coldestTempF}°F · ${EXPEDITIONS[id].tripLengthNights} nights</span></button>`
-  ).join('') + `</div>`;
+  let html = `<h1 class="question">Which trip?</h1><p class="subtext">Gear gets checked against that trip's expected conditions.</p>`;
+  html += `<div class="option-list">` + ids.map(id=>{
+    const exp = EXPEDITIONS[id];
+    const details = [exp.programLabel, `~${exp.coldestTempF}°F`, `${exp.tripLengthNights} nights`].filter(Boolean).join(' · ');
+    return `<button class="option-btn" onclick="pickExpeditionForCheck('${esc(id)}')">${esc(exp.name)}<span class="opt-sub">${esc(details)}</span></button>`;
+  }).join('') + `</div>`;
+  html += `<p class="fine-print">Conditions are Gear Wrangler's estimates. Wharton's required gear list for your trip is the final word.</p>`;
   el.innerHTML = html;
 }
 function pickExpeditionForCheck(id){
@@ -2253,7 +2285,7 @@ function pickExpeditionForCheck(id){
 function renderGearCheckCategoryStep(el){
   const exp = EXPEDITIONS[gearCheck.expeditionId];
   let html = `<h1 class="question">What are you considering?</h1><p class="subtext">Checking against <strong>${exp.name}</strong>.</p>`;
-  html += `<div class="option-list">` + PARTICIPANT_CHECK_CATEGORIES.map(key=>
+  html += `<div class="option-list">` + PARTICIPANT_CHECK_CATEGORIES.filter(key => !exp.items || exp.items.includes(key)).map(key=>
     `<button class="option-btn" onclick="pickCategoryForCheck('${key}')">${CATEGORIES[key].label}</button>`
   ).join('') + `</div>`;
   el.innerHTML = html;
@@ -2319,8 +2351,8 @@ function renderGearCheckManualStep(el){
     if(f.type === 'boolean'){
       html += `<div class="field-group"><div class="field-label"><span>${f.label}</span></div><div class="field-hint">${f.hint}</div>
         <div class="segmented">
-          <div class="seg-btn${gearCheck.manualData[f.field]===true?' selected':''}" onclick="setManualBool('${f.field}', true)">Yes</div>
-          <div class="seg-btn${gearCheck.manualData[f.field]===false?' selected':''}" onclick="setManualBool('${f.field}', false)">No</div>
+          <div class="seg-btn${gearCheck.manualData[f.field]===true?' selected':''}" aria-pressed="${gearCheck.manualData[f.field]===true}" onclick="setManualBool('${f.field}', true)">Yes</div>
+          <div class="seg-btn${gearCheck.manualData[f.field]===false?' selected':''}" aria-pressed="${gearCheck.manualData[f.field]===false}" onclick="setManualBool('${f.field}', false)">No</div>
         </div></div>`;
     } else {
       html += `<div class="field-group"><div class="field-label"><span>${meta.label}</span></div>${meta.hint?`<div class="field-hint">${meta.hint}</div>`:''}
@@ -2431,25 +2463,19 @@ function renderGearCheckResultStep(el){
     </div>
   `;
 
-  if(r.verdict !== 'dont-bring'){
-    html += `<div class="score-bar-track"><div class="score-bar-fill" style="width:${(c.total*100).toFixed(0)}%"></div></div>
-      <div class="score-pct">${(c.total*100).toFixed(0)}% match to this expedition's priorities</div>`;
-  }
-
   if(r.suggested.length){
     html += `<div class="section-label">${r.verdict === 'better-value' ? 'Better options' : 'Other options worth knowing about'}</div>`;
     r.suggested.forEach(item=>{
       html += `
         <div class="alt-item">
           <div class="alt-row">
-            <div class="alt-icon">${icon}</div>
+            <div class="alt-icon" aria-hidden="true">${icon}</div>
             <div class="alt-body">
               <div class="alt-head">
                 <span class="name">${item.name}${item.source==='amazon' ? ' <span class=\"tag tag-amazon\">Amazon</span>' : ''}</span>
-                <span class="score">${(item.total*100).toFixed(0)}% · $${item.price}</span>
+                <span class="score">$${item.price}</span>
               </div>
               <div class="alt-specs">${cfg.altSpecs(item)}</div>
-              <div class="alt-bar-track"><div class="alt-bar-fill" style="width:${(item.total*100).toFixed(0)}%"></div></div>
               <div style="margin-top:8px;"><a class="save-link" href="${item.priceUrl}" target="_blank" rel="noopener">View →</a></div>
             </div>
           </div>
@@ -2522,13 +2548,390 @@ async function loadPrices(){
   if(document.getElementById('screen-mysetup').classList.contains('active')) renderMySetup();
 }
 
+// =====================================================================
+// EXPEDITION FINDER — Wharton Leadership Ventures trips, matched to
+// someone's preferences and to the gear they already own
+// =====================================================================
+
+let expeditionList = null;      // from expeditions.json
+let expeditionsUpdated = null;
+let expeditionLoadFailed = false;
+
+const PROGRAMS = {
+  undergrad:{ label:'Undergraduate' },
+  mba:{ label:'MBA or Executive MBA' }
+};
+const TRIP_SETTINGS = {
+  mountains:'Mountains', ocean:'Ocean and coast', desert:'Desert', forest:'Forests and rivers', snow:'Snow and ice'
+};
+// Wharton's own expedition characteristics.
+const TRIP_TRAITS = {
+  coldWeather:'Cold weather', altitude:'High altitude', heavyPack:'Carrying a heavy pack',
+  longDays:'Days of 12+ hours', irregularSleep:'Irregular sleep', seaSickness:'Seasickness', longTrek:'Long trek'
+};
+const AVOIDABLE_TRAITS = ['coldWeather','altitude','heavyPack','longDays','irregularSleep','seaSickness'];
+const OWNED_GEAR = [
+  {key:'bag', label:'Sleeping bag'}, {key:'pad', label:'Sleeping pad'}, {key:'pack', label:'Backpack'},
+  {key:'jacket', label:'Rain jacket'}, {key:'shoes', label:'Hiking footwear'}, {key:'headlamp', label:'Headlamp'}
+];
+const GEAR_LABEL = Object.fromEntries(OWNED_GEAR.map(g => [g.key, g.label]));
+const FINDER_STEPS = ['program','settings','avoid','gear'];
+
+let finder = freshFinder();
+let finderShownStep = null;
+function freshFinder(){
+  return { step:'program', program:null, settings:[], avoid:[], owned:null, sort:null };
+}
+
+// Trip details come from another site, so anything shown from them is escaped.
+function esc(value){
+  return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
+}
+function safeUrl(url){
+  try{ const u = new URL(url); return u.protocol === 'https:' ? u.href : null; }catch(e){ return null; }
+}
+
+function todayIso(){
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+function upcomingTrips(program){
+  const today = todayIso();
+  return (expeditionList || []).filter(t => (!program || t.program === program) && (!t.endsBy || t.endsBy >= today));
+}
+function pastTripCount(program){
+  const today = todayIso();
+  return (expeditionList || []).filter(t => t.program === program && t.endsBy && t.endsBy < today).length;
+}
+
+async function loadExpeditions(){
+  try{
+    const response = await fetch('expeditions.json', {cache:'no-cache'});
+    if(!response.ok) throw new Error('status ' + response.status);
+    const data = await response.json();
+    expeditionList = Array.isArray(data.expeditions) ? data.expeditions : [];
+    expeditionsUpdated = data.updated || null;
+    useTripsForGearCheck();
+  }catch(e){
+    expeditionLoadFailed = true;
+  }
+  if(document.getElementById('screen-expeditions').classList.contains('active')) renderFinder();
+  if(document.getElementById('screen-gearcheck').classList.contains('active') && gearCheck.step === 'expedition') renderGearCheck();
+}
+
+// Gear Check uses the same trips and the same estimates.
+function tripConditions(trip){
+  const g = trip.gearNeeds;
+  return {
+    id:trip.id, name:`${trip.name} (${trip.when})`,
+    programLabel: trip.program === 'undergrad' ? 'Undergraduate' : 'MBA',
+    coldestTempF:g.coldestTempF, tripLengthNights:g.tripLengthNights, terrain:g.terrain,
+    rainLikelihood:g.rainLikelihood, headlampUse:g.headlampUse, items:g.items,
+    tentOccupancy:'2', filterGroupSize:6, cookingConditions: g.coldestTempF < 32 ? 'cold' : 'fair',
+    budgetLevel:'tight', weights:{ primary:1, weightLight:1, durability:1, comfort:1, price:5 }
+  };
+}
+function useTripsForGearCheck(){
+  const trips = upcomingTrips(null).filter(t => t.gearNeeds);
+  if(!trips.length) return;
+  const next = {};
+  trips.forEach(t => { next[t.id] = tripConditions(t); });
+  // Don't pull a trip out from under someone who is partway through checking against it.
+  if(gearCheck.expeditionId && !next[gearCheck.expeditionId] && EXPEDITIONS[gearCheck.expeditionId]){
+    next[gearCheck.expeditionId] = EXPEDITIONS[gearCheck.expeditionId];
+  }
+  EXPEDITIONS = next;
+}
+
+// ---------- Gear someone owns, compared with what a trip needs ----------
+function optionIndex(cat, value){
+  return CATEGORIES[cat].sizing.options.findIndex(o => o.value === value);
+}
+function gearReport(trip){
+  if(!trip.gearNeeds) return null;
+  const have = [], need = [];
+  trip.gearNeeds.items.forEach(cat => {
+    const required = sizingValueForCategory(cat, trip.gearNeeds);
+    const owned = finder.owned ? finder.owned[cat] : null;
+    if(owned && optionIndex(cat, owned) >= optionIndex(cat, required)) have.push(cat);
+    else need.push({cat, required});
+  });
+  return {have, need};
+}
+function needText(trip, cat, required){
+  if(cat === 'bag' || cat === 'pad') return `${GEAR_LABEL[cat]} for nights near ${trip.gearNeeds.coldestTempF}°F`;
+  if(cat === 'pack') return `Backpack for ${trip.gearNeeds.tripLengthNights} nights`;
+  const option = CATEGORIES[cat].sizing.options.find(o => o.value === required);
+  return `${GEAR_LABEL[cat]} for ${option.label.toLowerCase()}`;
+}
+// What someone saved in My setup, turned into the same "good for" levels.
+function ownedFromSetup(){
+  const owned = {};
+  OWNED_GEAR.forEach(g => {
+    const saved = kitState[g.key];
+    if(!saved) return;
+    const cfg = CATEGORIES[g.key];
+    const product = allProducts(cfg).find(p => p.id === String(saved.id).replace(/-used$/, ''));
+    if(!product) return;
+    const fits = cfg.sizing.options.filter(o => cfg.sizing.filter(product, o.value));
+    if(fits.length) owned[g.key] = fits[fits.length - 1].value;
+  });
+  return owned;
+}
+
+// ---------- Ranking ----------
+function hasPreferences(){ return finder.settings.length > 0 || finder.avoid.length > 0; }
+function currentSort(){ return finder.sort || (finder.owned && !hasPreferences() ? 'gear' : 'fit'); }
+function tripFit(trip){
+  const matches = finder.settings.filter(s => (trip.settings || []).includes(s));
+  const conflicts = finder.avoid.filter(t => (trip.traits || []).includes(t));
+  return { matches, conflicts, score: matches.length * 2 - conflicts.length * 3 };
+}
+function rankedTrips(trips){
+  const sort = currentSort();
+  return trips.map(trip => {
+    const gear = gearReport(trip);
+    return { trip, fit:tripFit(trip), gear, missing: gear ? gear.need.length : 99 };
+  }).sort((a, b) => {
+    const byFit = b.fit.score - a.fit.score;
+    const byGear = a.missing - b.missing;
+    const byDate = (a.trip.endsBy || '9999').localeCompare(b.trip.endsBy || '9999');
+    return (sort === 'gear' ? (byGear || byFit) : (byFit || byGear)) || byDate;
+  });
+}
+
+// ---------- Screens ----------
+function openExpeditionFinder(startOver){
+  if(startOver) finder = freshFinder();
+  finderShownStep = null;
+  updateProgress(null);
+  renderFinder();
+  showScreen('expeditions');
+}
+function expeditionBack(){
+  if(finder.step === 'results'){ finder.step = 'gear'; }
+  else {
+    const index = FINDER_STEPS.indexOf(finder.step);
+    if(index <= 0){ goToHero(); return; }
+    finder.step = FINDER_STEPS[index - 1];
+  }
+  renderFinder();
+}
+function finderGoTo(step){
+  finder.step = step;
+  renderFinder();
+  window.scrollTo({top:0});
+}
+function renderFinder(){
+  const el = document.getElementById('expeditionContent');
+  document.getElementById('expeditionBack').textContent = finder.step === 'program' ? '← Gear Wrangler' : '← Back';
+  if(!expeditionList){
+    el.innerHTML = expeditionLoadFailed
+      ? `<h1 class="question">Couldn't load the expedition list.</h1>
+         <p class="subtext">Try again in a moment, or see the trips on Wharton's <a class="text-link" href="https://leadership.wharton.upenn.edu/undergrad-ventures/" target="_blank" rel="noopener">undergraduate page</a> and <a class="text-link" href="https://leadership.wharton.upenn.edu/mba-leadership-ventures/" target="_blank" rel="noopener">MBA page</a>.</p>`
+      : `<h1 class="question">Loading expeditions…</h1>`;
+    return;
+  }
+  if(finder.step === 'results') renderFinderResults(el);
+  else renderFinderQuestion(el);
+  if(finderShownStep !== finder.step){
+    finderShownStep = finder.step;
+    focusHeading(document.getElementById('screen-expeditions'));
+  }
+}
+
+function finderEyebrow(number){ return `<div class="eyebrow">Find an expedition · ${number} of 4</div>`; }
+function choiceList(options, labels, selected, list){
+  if(!options.length) return `<p class="subtext">Nothing to choose here for these trips.</p>`;
+  return `<div class="option-list">` + options.map(key => {
+    const on = selected.includes(key);
+    return `<button class="option-btn${on?' selected':''}" aria-pressed="${on}" onclick="toggleFinderChoice('${list}','${key}', this)">${labels[key]}</button>`;
+  }).join('') + `</div>`;
+}
+function toggleFinderChoice(list, key, btn){
+  const on = !finder[list].includes(key);
+  finder[list] = on ? finder[list].concat(key) : finder[list].filter(k => k !== key);
+  btn.classList.toggle('selected', on);
+  btn.setAttribute('aria-pressed', on);
+}
+function pickProgram(key){
+  if(finder.program !== key){ finder.settings = []; finder.avoid = []; }
+  finder.program = key;
+  finderGoTo('settings');
+}
+
+function renderFinderQuestion(el){
+  const trips = upcomingTrips(finder.program);
+  let html = '';
+  if(finder.step === 'program'){
+    html = finderEyebrow(1) + `<h1 class="question">Which program are you in?</h1>
+      <p class="subtext">Wharton runs separate expeditions for each.</p><div class="option-list">` +
+      Object.keys(PROGRAMS).map(key => {
+        const count = upcomingTrips(key).length;
+        return `<button class="option-btn${finder.program===key?' selected':''}" onclick="pickProgram('${key}')">${PROGRAMS[key].label}<span class="opt-sub">${count} upcoming expedition${count===1?'':'s'}</span></button>`;
+      }).join('') + `</div>`;
+  } else if(finder.step === 'settings'){
+    const options = Object.keys(TRIP_SETTINGS).filter(key => trips.some(t => (t.settings || []).includes(key)));
+    html = finderEyebrow(2) + `<h1 class="question">Where would you like to go?</h1>
+      <p class="subtext">Tap any that appeal, or skip ahead.</p>` +
+      choiceList(options, TRIP_SETTINGS, finder.settings, 'settings') +
+      `<button class="btn" style="margin-top:8px;" onclick="finderGoTo('avoid')">Next</button>`;
+  } else if(finder.step === 'avoid'){
+    const options = AVOIDABLE_TRAITS.filter(key => trips.some(t => (t.traits || []).includes(key)));
+    html = finderEyebrow(3) + `<h1 class="question">Anything you'd rather avoid?</h1>
+      <p class="subtext">From Wharton's own description of each trip. Tap any, or skip ahead.</p>` +
+      choiceList(options, TRIP_TRAITS, finder.avoid, 'avoid') +
+      `<button class="btn" style="margin-top:8px;" onclick="finderGoTo('gear')">Next</button>`;
+  } else {
+    const fromSetup = ownedFromSetup();
+    const owned = finder.owned || fromSetup;
+    html = finderEyebrow(4) + `<h1 class="question">What gear do you already own?</h1>
+      <p class="subtext">We'll show what each trip still needs. Leave anything you don't have.</p>` +
+      OWNED_GEAR.map(g => {
+        const current = owned[g.key] || '';
+        return `<div class="owned-row"><label for="own-${g.key}">${g.label}</label>
+          <select id="own-${g.key}" class="owned-select"><option value="">I don't have one</option>` +
+          CATEGORIES[g.key].sizing.options.map(o =>
+            `<option value="${o.value}"${current===o.value?' selected':''}>Good for: ${esc(o.label)}${o.sub ? ` (${esc(o.sub)})` : ''}</option>`
+          ).join('') + `</select></div>`;
+      }).join('') +
+      (!finder.owned && Object.keys(fromSetup).length ? `<p class="fine-print">Filled in from My setup.</p>` : '') +
+      `<button class="btn" style="margin-top:16px;" onclick="submitOwnedGear()">See my expeditions</button>`;
+  }
+  el.innerHTML = html;
+}
+function submitOwnedGear(){
+  const owned = {};
+  OWNED_GEAR.forEach(g => {
+    const value = document.getElementById('own-' + g.key).value;
+    if(value) owned[g.key] = value;
+  });
+  finder.owned = Object.keys(owned).length ? owned : null;
+  finder.sort = null;
+  finderGoTo('results');
+}
+function setFinderSort(sort){
+  finder.sort = sort;
+  renderFinder();
+}
+
+function renderFinderResults(el){
+  const ranked = rankedTrips(upcomingTrips(finder.program));
+  const past = pastTripCount(finder.program);
+  let html = `<div class="eyebrow">${esc(PROGRAMS[finder.program].label)} expeditions</div>
+    <h1 class="question">${ranked.length ? 'Your best-fit expeditions.' : 'No upcoming expeditions right now.'}</h1>
+    <p class="subtext">${ranked.length} upcoming${past ? ` · ${past} from earlier this year not shown` : ''}</p>`;
+  if(!ranked.length){
+    html += `<p class="finder-prompt">Check Wharton's <a class="text-link" href="${finder.program === 'mba' ? 'https://leadership.wharton.upenn.edu/mba-leadership-ventures/' : 'https://leadership.wharton.upenn.edu/undergrad-ventures/'}" target="_blank" rel="noopener">expedition page</a> for new trips.</p>`;
+  }
+  if(finder.owned && hasPreferences() && ranked.length > 1){
+    const sort = currentSort();
+    html += `<div class="segmented sort-toggle" role="group" aria-label="Sort expeditions">` +
+      [['fit','Best fit'], ['gear','Least to buy']].map(([key, label]) =>
+        `<button class="seg-btn${sort===key?' selected':''}" aria-pressed="${sort===key}" onclick="setFinderSort('${key}')">${label}</button>`
+      ).join('') + `</div>`;
+  }
+  if(!finder.owned && ranked.length){
+    html += `<p class="finder-prompt"><span class="text-link" onclick="finderGoTo('gear')">Tell us what gear you own</span> to see what you'd still need for each trip.</p>`;
+  }
+  const showTop = ranked.length > 1 && (hasPreferences() || finder.owned);
+  html += ranked.map((r, index) => tripCard(r, showTop && index === 0)).join('');
+  html += `<details class="info"><summary>Where does this come from?</summary>
+    <p>Trip names, dates, costs, and characteristics come from Wharton Leadership Ventures' public pages${expeditionsUpdated ? `, last changed ${esc(formatCheckedDate(expeditionsUpdated))}` : ''}. Gear needs are Gear Wrangler's estimates, based on each trip's region, season, and activities. Wharton sends confirmed participants a required gear list, and that list is the final word. Gear can also be rented or borrowed. Check each trip's page to see whether applications are still open.</p>
+  </details>
+  <button class="btn secondary" style="margin-top:18px;" onclick="openExpeditionFinder(true)">Start over</button>`;
+  el.innerHTML = html;
+}
+
+function tripCard(ranked, isTop){
+  const {trip, fit, gear} = ranked;
+  const cost = trip.cost == null ? null : (trip.cost === 0 ? 'Free' : '$' + Number(trip.cost).toLocaleString('en-US'));
+  const chips = [trip.location, trip.when, cost].filter(Boolean);
+  let html = `<div class="trip-card${isTop ? ' top' : ''}">` + (isTop ? `<div class="eyebrow">Top match</div>` : '') +
+    `<h2>${esc(trip.name)}</h2><div class="result-meta">${chips.map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
+  const why = [];
+  if(fit.matches.length) why.push(`Matches: ${fit.matches.map(s => TRIP_SETTINGS[s]).join(', ')}.`);
+  if(fit.conflicts.length) why.push(`<strong>Heads up:</strong> includes ${fit.conflicts.map(t => TRIP_TRAITS[t].toLowerCase()).join(', ')}.`);
+  if(why.length) html += `<p class="why">${why.join(' ')}</p>`;
+  if(trip.focus && trip.focus.length) html += `<p class="trip-facts">${esc(trip.focus.join(' · '))}</p>`;
+  const expect = (trip.traits || []).map(t => TRIP_TRAITS[t]).filter(Boolean);
+  if(expect.length) html += `<p class="trip-facts"><strong>Expect:</strong> ${esc(expect.join(' · '))}</p>`;
+  if(trip.openTo) html += `<p class="trip-facts"><strong>Open to:</strong> ${esc(trip.openTo)}</p>`;
+  html += gearBlock(trip, gear);
+  const url = safeUrl(trip.url);
+  if(url) html += `<div class="trip-links"><a href="${esc(url)}" target="_blank" rel="noopener">Trip details on Wharton's site →</a></div>`;
+  return html + `</div>`;
+}
+function gearBlock(trip, gear){
+  if(!gear) return `<div class="trip-gear">Gear needs for this trip haven't been estimated yet.</div>`;
+  const item = n => `<li>${esc(needText(trip, n.cat, n.required))} · <span class="text-link" onclick="shopForTrip('${n.cat}','${esc(trip.id)}')">Find one</span></li>`;
+  let html = `<div class="trip-gear">`;
+  if(!finder.owned){
+    html += `<strong>Estimated personal gear</strong><ul>${gear.need.map(item).join('')}</ul>`;
+  } else if(!gear.need.length){
+    html += `<strong>Your gear covers our estimate for this trip.</strong>`;
+  } else {
+    const total = trip.gearNeeds.items.length;
+    html += `<strong>${gear.have.length ? `Your gear covers ${gear.have.length} of ${total}. You'd still need:` : `You'd still need all ${total}:`}</strong><ul>${gear.need.map(item).join('')}</ul>`;
+  }
+  if(trip.gearNeeds.note) html += `<div class="gear-note">${esc(trip.gearNeeds.note)}</div>`;
+  return html + `</div>`;
+}
+// Jumps into the gear finder, already set for this trip's conditions.
+function shopForTrip(cat, tripId){
+  const trip = (expeditionList || []).find(t => t.id === tripId);
+  if(!trip || !trip.gearNeeds) return;
+  resetStateForCategory(cat);
+  state.sizingValue = sizingValueForCategory(cat, trip.gearNeeds);
+  buildTabs();
+  goToStep(1);
+}
+
+// ---------- Shared: My setup back button, focus, keyboard access ----------
+function closeMySetup(){
+  const back = setupReturnTo;
+  if(back === 'results') return goToResults();
+  if(STEP_IDS.includes(back)) return goToStep(STEP_IDS.indexOf(back));
+  if(back === 'expeditions') return openExpeditionFinder();
+  if(back === 'gearcheck'){ updateProgress(null); renderGearCheckStep(); return showScreen('gearcheck'); }
+  goToHero();
+}
+// Moves keyboard and screen reader focus to the new screen's heading.
+function focusHeading(container){
+  const heading = container && container.querySelector('h1');
+  if(!heading) return;
+  heading.setAttribute('tabindex', '-1');
+  heading.focus({preventScroll:true});
+}
+// Some controls are styled spans and divs. This makes them reachable and usable by keyboard.
+function enhanceClickables(root){
+  root.querySelectorAll('[onclick]:not(button):not(a):not(input):not(select):not(label)').forEach(el => {
+    if(!el.hasAttribute('role')) el.setAttribute('role', 'button');
+    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+  });
+}
+function watchClickables(){
+  const app = document.getElementById('app');
+  enhanceClickables(app);
+  new MutationObserver(() => enhanceClickables(app)).observe(app, {childList:true, subtree:true});
+  document.addEventListener('keydown', e => {
+    const el = e.target;
+    if((e.key === 'Enter' || e.key === ' ') && el.getAttribute && el.getAttribute('role') === 'button' && el.tagName !== 'BUTTON'){
+      e.preventDefault();
+      el.click();
+    }
+  });
+}
+
 // ---------- INIT ----------
 buildTabs();
-buildHeroSelect();
+buildHeroCategories();
 goToHero();
 loadKit();
 loadPrices();
+loadExpeditions();
 initHeroVideo();
+watchClickables();
 </script>
 </body>
 </html>

@@ -1,0 +1,55 @@
+name: Update expeditions
+
+on:
+  schedule:
+    - cron: "41 12 * * 1" # Mondays at about 12:41 UTC. GitHub may start a little late.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: update-expeditions
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        run: python3 scripts/test_update_expeditions.py
+
+      - name: Read Wharton's expedition pages
+        run: python3 scripts/update_expeditions.py
+
+      - name: Save the results
+        run: |
+          git add expeditions.json scripts/expeditions-review.json
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update expeditions"
+          git pull --rebase origin main
+          git push
+
+      - name: Update the review issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/update_expeditions.py --review > review.md
+          number=$(gh issue list --state open --search 'in:title "Expeditions to review"' --json number --jq '.[0].number // empty')
+          if [ -s review.md ] && grep -q '[^[:space:]]' review.md; then
+            if [ -z "$number" ]; then
+              gh issue create --title "Expeditions to review" --body-file review.md
+            else
+              gh issue edit "$number" --body-file review.md
+            fi
+          elif [ -n "$number" ]; then
+            gh issue close "$number" --comment "Nothing is left to review."
+          fi
