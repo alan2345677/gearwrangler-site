@@ -798,7 +798,7 @@ const BAGS = [
     blurb:'Very warm for its weight; a strong pick for cold sleepers who still want to stay light.' },
   { id:'marmot-trestles-30', name:'Marmot Trestles 30', source:'brand',
     price:130, weight_oz:47, tempRating:30, durability:4, comfort:4, fill:'Synthetic',
-    priceUrl:'https://www.marmot.com/trestles-30-tl-sleeping-bag-39710.html', priceAsOf:'Sep 2026',
+    priceUrl:'https://www.marmot.com/p/trestles-elite-eco-30-sleeping-bag/SP_2948365/AFS_195115321598.html', priceAsOf:'Sep 2026',
     blurb:'Roomy, affordable, name-brand synthetic bag — a sensible step up from pure budget gear.' },
   { id:'kelty-cosmic-20', name:'Kelty Cosmic 20', source:'brand',
     price:180, weight_oz:39, tempRating:31, durability:4, comfort:3, fill:'550 fill down',
@@ -1228,8 +1228,8 @@ const STOVES = [
     priceUrl:'https://cascadedesigns.com/products/pocketrocket-deluxe-stove', priceAsOf:'Sep 2026',
     blurb:'Fast, reliable, pressure-regulated for solid cold-weather performance.' },
   { id:'jetboil-flash', name:'Jetboil Flash', source:'brand',
-    price:130, weight_oz:13.1, boilTime:4.5, durability:4, windResistance:4, coldCapable:false,
-    priceUrl:'https://www.jetboil.com/flash', priceAsOf:'Sep 2026',
+    price:145, weight_oz:13.1, boilTime:4.5, durability:4, windResistance:4, coldCapable:false,
+    priceUrl:'https://jetboil.johnsonoutdoors.com/us/shop/stoves-systems/flash-10l-fast-boil-system', priceAsOf:'Nov 2026',
     blurb:'Fast, foolproof, all-in-one — great for boiling water, less precise for simmering.' },
   { id:'jetboil-stash', name:'Jetboil Stash', source:'brand',
     price:150, weight_oz:7.1, boilTime:4.0, durability:3, windResistance:4, coldCapable:false,
@@ -1248,8 +1248,8 @@ const STOVES = [
     priceUrl:'https://primusequipment.com/en/products/express-spider-stove', priceAsOf:'Sep 2026',
     blurb:'A remote-canister design that performs better in the cold than upright stoves.' },
   { id:'jetboil-minimo', name:'Jetboil MiniMo', source:'brand',
-    price:150, weight_oz:14.6, boilTime:2.25, durability:4, windResistance:4, coldCapable:true,
-    priceUrl:'https://www.jetboil.com/minimo', priceAsOf:'Sep 2026',
+    price:180, weight_oz:14.6, boilTime:2.25, durability:4, windResistance:4, coldCapable:true,
+    priceUrl:'https://jetboil.johnsonoutdoors.com/us/shop/stoves-systems/minimo-cooking-system/mnmcb', priceAsOf:'Nov 2026',
     blurb:'Wide-mouth integrated cup that actually works for real cooking, not just boiling water.' },
   { id:'primus-primetech-1-3l', name:'Primus PrimeTech Stove System 1.3L', source:'brand',
     price:210, weight_oz:32, boilTime:4.0, durability:4, windResistance:4, coldCapable:true,
@@ -1844,7 +1844,8 @@ function computeResults(){
   const BUDGET_WINDOW = 75;
   const budgetLow = Math.max(0, state.budget - BUDGET_WINDOW);
   const budgetHigh = state.budget + BUDGET_WINDOW;
-  const withinBudgetCap = basePool.filter(p => p.price >= budgetLow && p.price <= budgetHigh);
+  // The low end uses the regular price, so a discount can't push a product out of the results.
+  const withinBudgetCap = basePool.filter(p => (p.wasPrice || p.price) >= budgetLow && p.price <= budgetHigh);
   if(withinBudgetCap.length > 0){
     // If nothing in the window is actually within budget, keep the cheaper options too,
     // rather than telling someone nothing fits when something does.
