@@ -481,38 +481,31 @@
       </nav>
       <div class="hero-content">
         <h1>Gear that's actually right for you.</h1>
-        <p id="heroSub">Tell Gear Wrangler what you need, and it'll take it from there.</p>
+        <p id="heroSub">Pick a trip. Check your gear. Buy only what's missing.</p>
         <div class="hero-choice-row" id="heroChoiceRow">
-          <button class="hero-choice-btn primary" onclick="openExpeditionFinder(true)">Find a trip<span class="opt-sub">Match a Wharton expedition to you</span></button>
-          <button class="hero-choice-btn" onclick="openMySetup()">My gear<span class="opt-sub">See what your gear is ready for</span></button>
-          <button class="hero-choice-btn" onclick="openShop()">Shop for gear<span class="opt-sub">Get matched to the right gear to buy</span></button>
+          <button class="hero-choice-btn primary" onclick="openExpeditionFinder(true)">Find a trip<span class="opt-sub">Wharton expeditions, ranked for you</span></button>
+          <button class="hero-choice-btn" onclick="openMySetup()">My gear<span class="opt-sub">See what you're ready for</span></button>
+          <button class="hero-choice-btn" onclick="openShop()">Shop for gear<span class="opt-sub">Four questions, one best match</span></button>
         </div>
       </div>
     </div>
     <div class="hero-explain">
       <div class="hero-explain-inner">
         <h2>Spend smarter on outdoor gear</h2>
-        <p class="lead blurb">Outdoor gear is easy to overspend on and easy to get wrong. Gear Wrangler is built to help you make the best buying decision for you. It weighs price, weight, durability, and performance against your trip, your budget, and your priorities, so your money goes to gear that fits how you get outside.</p>
-
-        <h2>How it works</h2>
-        <p class="lead">Three parts that share what they know about you: pick a trip, see what your gear is ready for, and shop for the rest.</p>
 
         <div class="tool-section">
           <div class="tool-label">Trips</div>
-          <h3 class="tool-title">Find the right expedition</h3>
-          <p>Gear Wrangler keeps an up-to-date list of Wharton Leadership Ventures expeditions for undergraduates and MBA students. Tell it where you'd like to go and what you'd rather avoid, and it ranks the trips and shows what your gear already covers.</p>
+          <p>Wharton expeditions, ranked by what you like and checked against your gear.</p>
         </div>
 
         <div class="tool-section">
           <div class="tool-label">My gear</div>
-          <h3 class="tool-title">See what your gear is ready for</h3>
-          <p>Add what you already own. Gear Wrangler checks it against each trip's estimated needs, shows which trips you're ready for, and suggests the upgrades that cover the most for the money. Searching for an item also tells you whether it would work, before you buy it.</p>
+          <p>Add what you own. See which trips you're ready for, and the cheapest upgrades.</p>
         </div>
 
         <div class="tool-section">
           <div class="tool-label">Shop</div>
-          <h3 class="tool-title">Buy what's right for you</h3>
-          <p>Every gear review site ranks products the same way: for the average person, on average terrain, with an average budget. Gear Wrangler asks four quick questions and ranks every option against your answers, so you get your pick, not everyone's pick.</p>
+          <p>Four questions. Your best pick, not everyone's.</p>
         </div>
       </div>
     </div>
@@ -535,7 +528,7 @@
       <h1 class="question" id="sizingQ"></h1>
       <p class="subtext" id="sizingHint"></p>
       <div class="option-list" id="sizingOptions"></div>
-      <span class="skip-link" onclick="quickPick()">Skip the questions and show me a good pick</span>
+      <span class="skip-link" onclick="quickPick()">Skip. Just show me a good pick</span>
     </div>
   </section>
 
@@ -544,7 +537,7 @@
     <span class="back-link" onclick="goToStep(0)">← Back</span>
     <div class="q-wrap compact">
       <h1 class="question">What's your budget?</h1>
-      <p class="subtext">The most you'd want to spend. We'll still show pricier picks, just marked.</p>
+      <p class="subtext">Pricier picks still show, marked.</p>
       <div class="big-value" id="budgetVal">$220</div>
       <input type="range" id="budget" min="50" max="300" step="10" value="220" aria-label="Budget">
       <div class="range-ends"><span id="budgetMinLabel">$50</span><span id="budgetMaxLabel">$300</span></div>
@@ -557,7 +550,7 @@
     <span class="back-link" onclick="goToStep(1)">← Back</span>
     <div class="q-wrap">
       <h1 class="question">Buying for one trip, or for years?</h1>
-      <p class="subtext">This balances price against how long it lasts.</p>
+      <p class="subtext">Trades price for durability.</p>
       <div class="option-list">
         <button class="option-btn" data-val="trial" onclick="selectTripType('trial')">Just trying it out<span class="opt-sub">One trip, or testing the hobby</span></button>
         <button class="option-btn" data-val="regular" onclick="selectTripType('regular')">I'll use it sometimes<span class="opt-sub">Casual, on-and-off use</span></button>
@@ -571,7 +564,7 @@
     <span class="back-link" onclick="goToStep(2)">← Back</span>
     <div class="q-wrap compact">
       <h1 class="question">What matters most?</h1>
-      <p class="subtext">Tap any that apply, or skip ahead.</p>
+      <p class="subtext">Tap any, or skip.</p>
       <div class="option-list" id="priorityOptions"></div>
       <button class="btn" style="margin-top:8px;" onclick="goToResults()">See my match</button>
     </div>
@@ -580,7 +573,7 @@
   <!-- MY GEAR -->
   <section class="screen" id="screen-mysetup">
     <h1 class="question" style="margin-top:6px;">My gear.</h1>
-    <p class="subtext">Add what you already own. Gear Wrangler checks it against each trip's estimated needs and suggests the upgrades that cover the most for the money.</p>
+    <p class="subtext">Add what you own. We'll show what it's ready for.</p>
     <div id="planPicker" class="plan-picker"></div>
     <div id="gearReadiness"></div>
     <div class="section-label">Your gear</div>
@@ -593,7 +586,7 @@
   <!-- SHOP -->
   <section class="screen" id="screen-shop">
     <h1 class="question" style="margin-top:6px;">What are you shopping for?</h1>
-    <p class="subtext">Four quick questions, then the best match for your trip and budget.</p>
+    <p class="subtext">Four questions, one best match.</p>
     <div class="shop-grid" id="shopGrid"></div>
   </section>
 
@@ -617,7 +610,7 @@
       </label>
       <div>
         <div class="toggle-title">Amazon budget picks</div>
-        <div class="toggle-desc">Cheaper, lesser-known brands. Fine for casual use.</div>
+        <div class="toggle-desc">Cheaper, lesser-known brands.</div>
       </div>
     </div>
     <div class="toggle-row">
@@ -627,18 +620,18 @@
       </label>
       <div>
         <div class="toggle-title">Used / pre-owned</div>
-        <div class="toggle-desc">~30–60% cheaper. Estimated price, condition varies.</div>
+        <div class="toggle-desc">30–60% cheaper. Prices estimated.</div>
       </div>
     </div>
     <div id="resultsRest"></div>
     <details class="info">
-      <summary>Where do these numbers come from?</summary>
-      <p>We check store prices once a day where stores allow it, and show the date of the last check. Other new-item prices come from 2026 gear guides and retailer listings, and show the month they were last updated. "On sale" means the store lists a higher regular price. "Price drop" means the price fell from the highest we've seen in the last 90 days. Sale prices may only apply to some colors or sizes, so confirm the price on the store's page before you buy. Amazon picks link to a search, not one exact listing, since pages change often. Used prices are estimates (30–60% off the regular price) based on typical resale discounts — check the linked marketplace for real listings.</p>
+      <summary>About these prices</summary>
+      <p>Checked daily where stores allow; others show the month last updated. "On sale" means the store lists a higher regular price. Confirm on the store's page before buying. Amazon picks link to a search. Used prices are estimates.</p>
     </details>
   </section>
 
   <footer class="site-footer">
-    <p>Your gear list stays in this browser, and tag photos are read on your device, never uploaded. This site has no accounts or analytics. Fonts load from Google, and store links take you to other websites.</p>
+    <p>Your gear stays in this browser. Tag photos never leave your device. No accounts, no tracking.</p>
   </footer>
 
 </div>
@@ -1844,7 +1837,7 @@ function renderResults(){
   document.getElementById('resultsTitle').textContent = 'Your best-fit ' + cfg.label.toLowerCase() + '.';
   document.getElementById('resultsSub').textContent = top.overBudget
     ? `Nothing fits your ~$${state.budget} budget, so this is the closest.`
-    : `Best match for what you told me · budget ~$${state.budget}`;
+    : `Budget ~$${state.budget}`;
   if(state.forTrip && BACKPACKING_MAX_OZ[state.category]){
     document.getElementById('resultsSub').textContent += ` · backpacking gear only, for ${state.forTrip}`;
   }
@@ -2164,13 +2157,13 @@ function readinessHtml(trips){
     const met = needs.filter(n => meetsNeed(n.cat, levels[n.cat], n.required)).length;
     const headline = met === needs.length ? `Ready for ${esc(trip.name)}` : `of the gear ${esc(trip.name)} needs`;
     return `<div class="readiness"><div class="readiness-num">${met} of ${needs.length}</div>
-      <div><strong>${headline}</strong><div class="fine-print">Estimated ${esc(conditionsText(trip.gearNeeds))}. Wharton's required gear list is the final word.</div></div></div>`;
+      <div><strong>${headline}</strong><div class="fine-print">Estimated ${esc(conditionsText(trip.gearNeeds))}.</div></div></div>`;
   }
   const r = readiness(levels, trips);
   const names = r.ready.map(t => t.name + (trips.some(o => o !== t && o.name === t.name) ? ` (${PROGRAMS[t.program].label})` : ''));
   return `<div class="readiness"><div class="readiness-num">${r.ready.length} of ${trips.length}</div>
     <div><strong>upcoming expeditions your gear is ready for</strong>
-    <div class="fine-print">${r.ready.length ? 'Ready: ' + esc(names.join(', ')) + '. ' : ''}Based on Gear Wrangler's estimates. Wharton's required gear list is the final word.</div></div></div>`;
+    ${r.ready.length ? `<div class="fine-print">Ready: ${esc(names.join(', '))}.</div>` : ''}</div></div>`;
 }
 
 function gearRow(cat, trips){
@@ -2218,24 +2211,23 @@ function gearRow(cat, trips){
 function groupGearHtml(){
   const open = GROUP_GEAR.some(cat => kitState[cat] || gearEditing === cat);
   return `<details class="group-gear"${open ? ' open' : ''}><summary>Group gear: tent, water filter, stove</summary>
-    <p class="fine-print">Wharton's trip fees generally cover group equipment, so these don't count toward trip readiness.</p>
+    <p class="fine-print">Usually provided on Wharton trips.</p>
     ${GROUP_GEAR.map(cat => gearRow(cat, [])).join('')}</details>`;
 }
 
 // Adding what you own doubles as checking an item: each search result says whether it fits.
 function gearEditor(cat, trips){
   const options = CATEGORIES[cat].sizing.options;
-  const fitsWhat = !PERSONAL_GEAR.includes(cat) || !trips.length ? '' : (trips.length === 1 ? ' Each result shows whether it fits this trip.' : ' Each result shows how many trips it fits.');
   return `<div class="gear-editor">
     <div class="tag-reader">
       <button class="btn secondary small" onclick="document.getElementById('tagPhoto').click()">Take a photo of the tag</button>
       <input type="file" id="tagPhoto" accept="image/*" capture="environment" hidden onchange="readTagPhoto('${cat}', this)">
       <div id="tagResult"></div>
     </div>
-    <label class="plan-label" for="gearSearch">Or search our list for your ${esc(gearLabel(cat).toLowerCase())}</label>
+    <label class="plan-label" for="gearSearch">Or search by name</label>
     <input type="text" class="search-box" id="gearSearch" placeholder="Type a brand or model…" autocomplete="off" oninput="onGearSearch('${cat}', this.value)">
-    <div id="gearSearchResults"><div class="search-hint">Start typing to search.${fitsWhat}</div></div>
-    <label class="plan-label" for="ownLevel-${cat}">Not listed? ${BACKPACKING_MAX_OZ[cat] ? `If it's a backpacking ${esc(gearLabel(cat).toLowerCase())}, add` : 'Add'} it by what it's good for</label>
+    <div id="gearSearchResults"></div>
+    <label class="plan-label" for="ownLevel-${cat}">Not listed? Pick what it's good for</label>
     <div class="gear-editor-row">
       <select id="ownLevel-${cat}" class="owned-select"><option value="">Choose…</option>${options.map(o =>
         `<option value="${o.value}">${esc(o.label)}${o.sub ? ' (' + esc(o.sub) + ')' : ''}</option>`).join('')}</select>
@@ -2247,11 +2239,11 @@ function gearEditor(cat, trips){
 function onGearSearch(cat, query){
   const box = document.getElementById('gearSearchResults');
   const q = query.trim().toLowerCase();
-  if(q.length < 2){ box.innerHTML = `<div class="search-hint">Start typing to search.</div>`; return; }
+  if(q.length < 2){ box.innerHTML = ''; return; }
   const trips = planTrips();
   const matches = allProducts(CATEGORIES[cat]).filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
   if(!matches.length){
-    box.innerHTML = `<div class="search-hint">No matches. Try another word, or add it by what it's good for below.</div>`;
+    box.innerHTML = `<div class="search-hint">No matches.</div>`;
     return;
   }
   box.innerHTML = matches.map(p => gearResultHtml(cat, p, trips)).join('');
@@ -2295,14 +2287,14 @@ async function readTagPhoto(cat, input){
   const file = input.files && input.files[0];
   if(!file) return;
   const box = document.getElementById('tagResult');
-  box.innerHTML = `<div class="search-hint" role="status">Reading the tag… The first time takes a little longer.</div>`;
+  box.innerHTML = `<div class="search-hint" role="status">Reading…</div>`;
   try{
     const Tesseract = await loadTesseract();
     const image = await prepareTagImage(file);
     const { data } = await Tesseract.recognize(image, 'eng');
     showTagReading(cat, data.text || '');
   }catch(e){
-    box.innerHTML = `<div class="search-hint" role="status">Couldn't read that photo. Try again close up and in good light, or search by name below.</div>`;
+    box.innerHTML = `<div class="search-hint" role="status">Couldn't read it. Try closer, in good light.</div>`;
   }
   input.value = '';
 }
@@ -2367,14 +2359,14 @@ function showTagReading(cat, text){
   if(matches.length){
     html += `<div class="plan-label">Possible matches</div>` + matches.map(p => gearResultHtml(cat, p, trips)).join('');
   } else {
-    html += `<div class="search-hint">We couldn't match this tag to a product we list.</div>`;
+    html += `<div class="search-hint">No match in our list.</div>`;
   }
   if(fields.length){
     const found = fields.some(f => specs[f.key] != null);
-    html += `<div class="plan-label">${matches.length ? 'Or add it with what the tag says' : 'Add it with what the tag says'}</div>
-      ${found ? '' : `<p class="fine-print">We couldn't find the rating on the tag. Type it in if you know it.</p>`}
+    html += `<div class="plan-label">${matches.length ? 'Or add it by its numbers' : 'Add it by its numbers'}</div>
+      ${found ? '' : `<p class="fine-print">Rating not found. Type it in.</p>`}
       <div class="tag-fields">${fields.map(f => `<label>${esc(f.label)}<input type="number" step="any" class="owned-select" id="tag-${f.key}" value="${specs[f.key] != null ? specs[f.key] : ''}"></label>`).join('')}</div>
-      <button class="btn small" onclick="addOwnedFromTag('${cat}')">Add with these numbers</button>
+      <button class="btn small" onclick="addOwnedFromTag('${cat}')">Add</button>
       <div id="tagError" class="gear-status warn" role="status"></div>`;
   }
   const snippet = text.replace(/\s+/g, ' ').trim().slice(0, 200);
@@ -2506,7 +2498,7 @@ function upgradesHtml(trips){
     options.sort((a, b) => a.plan.n - b.plan.n);
   }
   return `<div class="section-label">${title}</div>
-    <p class="fine-print">The cheapest gear that gets you ready for more trips, at today's prices. Amazon budget picks are included.</p>` +
+    <p class="fine-print">Cheapest ways to be ready for more trips. Gear needs are our estimates; Wharton's list is final.</p>` +
     options.map(o => planCard(o, trips, now, single)).join('');
 }
 function planCard(option, trips, now, single){
@@ -2764,6 +2756,16 @@ function needText(cat, required){
   const option = CATEGORIES[cat].sizing.options.find(o => o.value === required);
   return `${GEAR_LABEL[cat]} for ${option.label.toLowerCase()}`;
 }
+// Short labels for trip cards.
+function shortNeed(cat, required){
+  if(cat === 'bag') return `Sleeping bag, ${BAG_COLDEST_NIGHT_F[required]}°F or colder`;
+  if(cat === 'pad') return `Sleeping pad, R-${PAD_MIN_R[required]}+`;
+  if(cat === 'pack') return `Backpack, ${PACK_MIN_L[required]}L+`;
+  if(cat === 'jacket') return ({casual:'Rain jacket, light rain', regular:'Rain jacket, steady rain', sustained:'Rain jacket, heavy rain'})[required];
+  if(cat === 'shoes') return ({light:'Trail shoes', backpacking:'Backpacking boots', offtrail:'Off-trail boots'})[required];
+  if(cat === 'headlamp') return ({camp:'Headlamp', backpacking:'Headlamp, 300+ lumens', technical:'Headlamp, 600+ lumens'})[required];
+  return needText(cat, required);
+}
 function lowerFirst(text){ return text.charAt(0).toLowerCase() + text.slice(1); }
 // "a sleeping bag …", but just "hiking footwear …".
 function needPhrase(cat, text){ return (cat === 'shoes' ? '' : 'a ') + lowerFirst(text); }
@@ -2875,7 +2877,7 @@ function renderFinderQuestion(el){
   let html = '';
   if(finder.step === 'program'){
     html = finderEyebrow(1) + `<h1 class="question">Which program are you in?</h1>
-      <p class="subtext">Wharton runs separate expeditions for each.</p><div class="option-list">` +
+      <div class="option-list">` +
       Object.keys(PROGRAMS).map(key => {
         const count = upcomingTrips(key).length;
         return `<button class="option-btn${finder.program===key?' selected':''}" onclick="pickProgram('${key}')">${PROGRAMS[key].label}<span class="opt-sub">${count} upcoming expedition${count===1?'':'s'}</span></button>`;
@@ -2883,13 +2885,13 @@ function renderFinderQuestion(el){
   } else if(finder.step === 'settings'){
     const options = Object.keys(TRIP_SETTINGS).filter(key => trips.some(t => (t.settings || []).includes(key)));
     html = finderEyebrow(2) + `<h1 class="question">Where would you like to go?</h1>
-      <p class="subtext">Tap any that appeal, or skip ahead.</p>` +
+      <p class="subtext">Tap any, or skip.</p>` +
       choiceList(options, TRIP_SETTINGS, finder.settings, 'settings') +
       `<button class="btn" style="margin-top:8px;" onclick="finderGoTo('avoid')">Next</button>`;
   } else {
     const options = AVOIDABLE_TRAITS.filter(key => trips.some(t => (t.traits || []).includes(key)));
     html = finderEyebrow(3) + `<h1 class="question">Anything you'd rather avoid?</h1>
-      <p class="subtext">From Wharton's own description of each trip. Tap any, or skip ahead.</p>` +
+      <p class="subtext">Tap any, or skip.</p>` +
       choiceList(options, TRIP_TRAITS, finder.avoid, 'avoid') +
       `<button class="btn" style="margin-top:8px;" onclick="finderGoTo('results')">See matching trips</button>`;
   }
@@ -2917,12 +2919,12 @@ function renderFinderResults(el){
       ).join('') + `</div>`;
   }
   if(!hasMyGear() && ranked.length){
-    html += `<p class="finder-prompt"><span class="text-link" onclick="openMySetup()">Add what you own in My gear</span> to see what you'd still need for each trip.</p>`;
+    html += `<p class="finder-prompt"><span class="text-link" onclick="openMySetup()">Add your gear</span> to see what's missing.</p>`;
   }
   const showTop = ranked.length > 1 && (hasPreferences() || hasMyGear());
   html += ranked.map((r, index) => tripCard(r, showTop && index === 0)).join('');
-  html += `<details class="info"><summary>Where does this come from?</summary>
-    <p>Trip names, dates, costs, and characteristics come from Wharton Leadership Ventures' public pages${expeditionsUpdated ? `, last changed ${esc(formatCheckedDate(expeditionsUpdated))}` : ''}. Gear needs are Gear Wrangler's estimates, based on each trip's region, season, and activities. Wharton sends confirmed participants a required gear list, and that list is the final word. Gear can also be rented or borrowed. Check each trip's page to see whether applications are still open.</p>
+  html += `<details class="info"><summary>About this data</summary>
+    <p>Trips come from Wharton's public pages${expeditionsUpdated ? `, last changed ${esc(formatCheckedDate(expeditionsUpdated))}` : ''}. Gear needs are our estimates; Wharton's gear list is final. Check each trip's page for open applications.</p>
   </details>
   <button class="btn secondary" style="margin-top:18px;" onclick="openExpeditionFinder(true)">Start over</button>`;
   el.innerHTML = html;
@@ -2936,7 +2938,6 @@ function tripCard(ranked, isTop){
   if(fit.matches.length) why.push(`Matches: ${fit.matches.map(s => TRIP_SETTINGS[s]).join(', ')}.`);
   if(fit.conflicts.length) why.push(`<strong>Heads up:</strong> includes ${fit.conflicts.map(t => TRIP_TRAITS[t].toLowerCase()).join(', ')}.`);
   if(why.length) html += `<p class="why">${why.join(' ')}</p>`;
-  if(trip.focus && trip.focus.length) html += `<p class="trip-facts">${esc(trip.focus.join(' · '))}</p>`;
   const expect = (trip.traits || []).map(t => TRIP_TRAITS[t]).filter(Boolean);
   if(expect.length) html += `<p class="trip-facts"><strong>Expect:</strong> ${esc(expect.join(' · '))}</p>`;
   if(trip.openTo) html += `<p class="trip-facts"><strong>Open to:</strong> ${esc(trip.openTo)}</p>`;
@@ -2944,17 +2945,17 @@ function tripCard(ranked, isTop){
   html += gearBlock(trip, gear);
   const url = safeUrl(trip.url);
   const links = [];
-  if(url) links.push(`<a href="${esc(url)}" target="_blank" rel="noopener">Trip details on Wharton's site →</a>`);
-  if(trip.gearNeeds) links.push(`<span class="text-link" onclick="openMyGearForTrip('${esc(trip.id)}')">Plan my gear for this trip →</span>`);
+  if(url) links.push(`<a href="${esc(url)}" target="_blank" rel="noopener">Wharton page →</a>`);
+  if(trip.gearNeeds) links.push(`<span class="text-link" onclick="openMyGearForTrip('${esc(trip.id)}')">Plan my gear →</span>`);
   if(links.length) html += `<div class="trip-links">${links.join('<br>')}</div>`;
   return html + `</div>`;
 }
 function gearBlock(trip, gear){
   if(!gear) return `<div class="trip-gear">Gear needs for this trip haven't been estimated yet.</div>`;
-  const item = n => `<li>${esc(n.text)} · <span class="text-link" onclick="shopForTrip('${n.cat}','${esc(trip.id)}')">Find one</span></li>`;
+  const item = n => `<li>${esc(shortNeed(n.cat, n.required))} · <span class="text-link" onclick="shopForTrip('${n.cat}','${esc(trip.id)}')">Find one</span></li>`;
   let html = `<div class="trip-gear">`;
   if(!hasMyGear()){
-    html += `<strong>Estimated personal gear</strong><ul>${gear.need.map(item).join('')}</ul>`;
+    html += `<strong>Gear you'll need</strong><ul>${gear.need.map(item).join('')}</ul>`;
   } else if(!gear.need.length){
     html += `<strong>Your gear covers our estimate for this trip.</strong>`;
   } else {

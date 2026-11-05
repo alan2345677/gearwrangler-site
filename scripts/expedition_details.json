@@ -59,7 +59,7 @@
         "terrain": "offtrail",
         "rainLikelihood": "casual",
         "headlampUse": "technical",
-        "note": "This trip likely also needs technical gear that Gear Wrangler doesn't cover, such as mountaineering boots and crampons."
+        "note": "Also needs technical gear, like mountaineering boots and crampons."
       }
     },
     "antarctica": {
@@ -72,7 +72,7 @@
         "terrain": "offtrail",
         "rainLikelihood": "sustained",
         "headlampUse": "camp",
-        "note": "This trip likely also needs technical gear that Gear Wrangler doesn't cover, such as mountaineering boots and glacier equipment."
+        "note": "Also needs technical gear, like mountaineering boots and glacier equipment."
       }
     },
     "aotearoa": {
@@ -109,7 +109,7 @@
         "terrain": "light",
         "rainLikelihood": "regular",
         "headlampUse": "camp",
-        "note": "This is a boat trip, so this estimate assumes you won't need a sleeping bag, pad, backpack, or hiking shoes."
+        "note": "Boat trip: no bag, pad, pack, or boots needed."
       }
     }
   }
