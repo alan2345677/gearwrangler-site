@@ -30,7 +30,7 @@
   {
    "id": "marmot-trestles-30",
    "name": "Marmot Trestles 30",
-   "reason": "store refused the check (403)"
+   "reason": "page returned an error (404)"
   },
   {
    "id": "mountainhardwear-phantom-0",
@@ -65,11 +65,6 @@
   {
    "id": "mountainhardwear-mineralking-3",
    "name": "Mountain Hardwear Mineral King 3",
-   "reason": "store refused the check (403)"
-  },
-  {
-   "id": "marmot-tungsten-4p",
-   "name": "Marmot Tungsten 4P",
    "reason": "store refused the check (403)"
   },
   {
@@ -128,11 +123,6 @@
    "reason": "store refused the check (403)"
   },
   {
-   "id": "marmot-precip-eco",
-   "name": "Marmot PreCip Eco",
-   "reason": "store refused the check (403)"
-  },
-  {
    "id": "hellyhansen-verglas-infinity-2",
    "name": "Helly Hansen Verglas Infinity Shell 2.0",
    "reason": "store refused the check (403)"
@@ -170,12 +160,12 @@
   {
    "id": "nitecore-nu25",
    "name": "Nitecore NU25",
-   "reason": "no connection"
+   "reason": "no price found on the page"
   },
   {
    "id": "nitecore-nu27",
    "name": "Nitecore NU27",
-   "reason": "no connection"
+   "reason": "no price found on the page"
   },
   {
    "id": "petzl-actik-core",
@@ -215,7 +205,7 @@
   {
    "id": "jetboil-flash",
    "name": "Jetboil Flash",
-   "reason": "no price found on the page"
+   "reason": "page returned an error (404)"
   },
   {
    "id": "jetboil-stash",
@@ -225,16 +215,11 @@
   {
    "id": "jetboil-minimo",
    "name": "Jetboil MiniMo",
-   "reason": "no price found on the page"
+   "reason": "page returned an error (404)"
   },
   {
    "id": "coleman-fyrestorm",
    "name": "Coleman FyreStorm",
-   "reason": "store refused the check (403)"
-  },
-  {
-   "id": "snowpeak-litemax",
-   "name": "Snow Peak LiteMax",
    "reason": "store refused the check (403)"
   }
  ],
@@ -382,8 +367,8 @@
  ],
  "summary": {
   "held": 0,
-  "not_read": 47,
+  "not_read": 44,
   "not_tracked": 28,
-  "updated": 57
+  "updated": 63
  }
 }
