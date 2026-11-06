@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gear Wrangler</title>
-<meta name="description" content="Find a Wharton Leadership Ventures expedition, see what your gear is ready for, and get matched to the right gear for the rest.">
+<title>Handbook</title>
+<meta name="description" content="The Wharton Leadership Ventures handbook. Choose an expedition and the right gear with GearWrangler, then log into your expedition to meet your crew and staff.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Gear Wrangler">
-<meta property="og:description" content="Find a Wharton expedition, see what your gear is ready for, and shop for the rest.">
+<meta property="og:title" content="Handbook">
+<meta property="og:description" content="Choose a Wharton expedition, get the right gear, and run your trip with your crew.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B211C'/%3E%3Cpath d='M16 7 27 25H5z' fill='%23FAFAF7'/%3E%3Cpath d='M16 15l5 10H11z' fill='%231B211C'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -69,6 +69,7 @@
     font-size:12.5px; color:var(--ink-soft); cursor:pointer; text-decoration:underline;
     margin-bottom:12px; display:inline-block;
   }
+  .tool-name{ font-family:'Archivo',sans-serif; font-weight:700; font-size:15px; margin-bottom:10px; }
 
   .screen{display:none;}
   .screen.active{display:block; animation:fadein .3s ease;}
@@ -475,51 +476,37 @@
       <div class="hero-overlay"></div>
       <p class="hero-empty-note" id="heroEmptyNote" style="display:none;">Background video unavailable</p>
       <nav class="hero-nav">
-        <span class="hero-logo">Gear Wrangler</span>
-        <span class="hero-nav-tabs">
-          <span class="hero-tab" id="heroTripTab" onclick="MyTrip.open()">Trip code</span>
-          <span class="hero-tab" onclick="openMySetup()">My gear (<span id="heroKitCount">0</span>)</span>
-        </span>
+        <span class="hero-logo">Handbook</span>
       </nav>
       <div class="hero-content">
-        <h1>Gear that's actually right for you.</h1>
-        <p id="heroSub">Pick a trip. Check your gear. Buy only what's missing.</p>
+        <h1>Your Wharton expedition, start to finish.</h1>
+        <p id="heroSub">Choose a trip and the gear for it. Then run it with your crew.</p>
         <div class="hero-choice-row" id="heroChoiceRow">
-          <button class="hero-choice-btn primary" onclick="openExpeditionFinder(true)">Find a trip<span class="opt-sub">Wharton expeditions, ranked for you</span></button>
-          <button class="hero-choice-btn" onclick="openMySetup()">My gear<span class="opt-sub">See what you're ready for</span></button>
-          <button class="hero-choice-btn" onclick="openShop()">Shop for gear<span class="opt-sub">Four questions, one best match</span></button>
+          <button class="hero-choice-btn primary" onclick="openExpeditionFinder(true)">Choose an expedition<span class="opt-sub">GearWrangler finds your trip and gear</span></button>
+          <button class="hero-choice-btn" onclick="MyTrip.open()">Log into your expedition<span class="opt-sub">Accepted? Your crew, gear check, and staff</span></button>
         </div>
       </div>
     </div>
     <div class="hero-explain">
       <div class="hero-explain-inner">
-        <h2>Spend smarter on outdoor gear</h2>
+        <h2>One handbook for every expedition</h2>
 
         <div class="tool-section">
-          <div class="tool-label">Trips</div>
-          <p>Wharton expeditions, ranked by what you like and checked against your gear.</p>
+          <div class="tool-label">Choose an expedition</div>
+          <p>GearWrangler ranks Wharton expeditions by what you like, checks the gear you own, and finds the best value for what's missing.</p>
         </div>
 
         <div class="tool-section">
-          <div class="tool-label">My gear</div>
-          <p>Add what you own. See which trips you're ready for, and the cheapest upgrades.</p>
-        </div>
-
-        <div class="tool-section">
-          <div class="tool-label">Shop</div>
-          <p>Four questions. Your best pick, not everyone's.</p>
-        </div>
-
-        <div class="tool-section">
-          <div class="tool-label">Accepted to a trip?</div>
-          <p>Enter your trip code. Meet your crew, get your gear checked, message your staff, and book your 1-1. <span class="text-link" onclick="MyTrip.open()">Enter a code →</span></p>
+          <div class="tool-label">Log into your expedition</div>
+          <p>Accepted? Sign in and enter your trip code. Meet your crew, get your gear checked, message your staff, and book your 1-1.</p>
         </div>
       </div>
     </div>
   </section>
 
   <div class="topbar">
-    <div class="home-link" onclick="goToHero()">← Gear Wrangler</div>
+    <div class="home-link" onclick="goToHero()">← Handbook</div>
+    <div class="tool-name">GearWrangler</div>
     <div class="cat-tabs" id="sectionTabs"></div>
     <div class="progress-row" id="progressRow" style="display:none;">
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
@@ -579,7 +566,7 @@
 
   <!-- MY GEAR -->
   <section class="screen" id="screen-mysetup">
-    <span class="back-link" id="backToTrip" style="display:none;" onclick="MyTrip.open('gear')">← Back to my trip</span>
+    <span class="back-link" id="backToTrip" style="display:none;" onclick="MyTrip.open('gear')">← Back to my expedition</span>
     <h1 class="question" style="margin-top:6px;">My gear.</h1>
     <p class="subtext">Add what you own. We'll show what it's ready for.</p>
     <div id="planPicker" class="plan-picker"></div>
@@ -638,7 +625,7 @@
     </details>
   </section>
 
-  <!-- MY TRIP (trip.js) -->
+  <!-- MY EXPEDITION (trip.js) -->
   <section class="screen" id="screen-trip">
     <div id="tripContent"></div>
   </section>
@@ -2320,7 +2307,7 @@ async function readTagPhoto(cat, input){
   input.value = '';
 }
 
-// The ratings Gear Wrangler checks, typed in or corrected by the person.
+// The ratings GearWrangler checks, typed in or corrected by the person.
 const TAG_FIELDS = {
   bag: [{key:'tempRating', label:'Comfort rating (°F)'}, {key:'weight_oz', label:'Weight (oz)'}],
   pad: [{key:'rValue', label:'R-value'}, {key:'weight_oz', label:'Weight (oz)'}],
@@ -2333,7 +2320,7 @@ function parseTagSpecs(text){
   const num = re => { const m = t.match(re); return m ? parseFloat(m[1].replace(/,/g, '')) : null; };
   const toF = c => c == null ? null : Math.round(c * 9 / 5 + 32);
   const specs = {};
-  // Gear Wrangler uses comfort ratings, so a labeled comfort rating wins.
+  // GearWrangler uses comfort ratings, so a labeled comfort rating wins.
   let temp = num(/comfort[^0-9-]{0,15}(-?\d{1,2})\s*°?\s*F/i);
   if(temp == null) temp = toF(num(/comfort[^0-9-]{0,15}(-?\d{1,2})\s*°?\s*C/i));
   if(temp == null) temp = num(/(-?\d{1,2})\s*°\s*F\b/i);
@@ -2861,7 +2848,8 @@ function finderGoTo(step){
 }
 function renderFinder(){
   const el = document.getElementById('expeditionContent');
-  document.getElementById('expeditionBack').textContent = finder.step === 'program' ? '← Gear Wrangler' : '← Back';
+  // The top bar already links home, so the first question has no back link.
+  document.getElementById('expeditionBack').style.display = finder.step === 'program' ? 'none' : '';
   if(!expeditionList){
     el.innerHTML = tripListUnavailableHtml();
     return;

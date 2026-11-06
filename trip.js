@@ -1,5 +1,5 @@
 // =====================================================================
-// MY TRIP: the area for people accepted onto an expedition.
+// MY EXPEDITION (the Handbook): the area for people accepted onto an expedition.
 //
 // People sign in with an email and password, then join with a shared trip code.
 // Staff (Venture Fellows and guides) use a separate staff code for the same trip,
@@ -531,7 +531,7 @@ const MyTrip = (() => {
   function statusHtml(){
     const failed = s.step === 'error';
     return `<div class="trip-shell"><div class="join-stage"><div class="join-card">
-      <span class="back-link" onclick="goToHero()">← Gear Wrangler</span>
+      <span class="back-link" onclick="goToHero()">← Handbook</span>
       ${failed ? `<h1 class="question">Couldn't open your trip.</h1>
         <p class="subtext">${esc(s.error)}</p>
         <button class="btn" onclick="MyTrip.open()">Try again</button>`
@@ -542,7 +542,7 @@ const MyTrip = (() => {
   // Step 0 (real site only): sign in or create an account.
   function authHtml(){
     const mode = s.authMode;
-    const title = { signin:'Sign in to My trip.', signup:'Create your account.', reset:'Reset your password.', newpassword:'Pick a new password.' }[mode];
+    const title = { signin:'Log into your expedition.', signup:'Create your account.', reset:'Reset your password.', newpassword:'Pick a new password.' }[mode];
     const sub = { signin:"Accepted to an expedition? Sign in, then enter your trip code.",
       signup:'Any email works. Your trip code comes next.', reset:"We'll email you a link to pick a new one.",
       newpassword:'At least 8 characters.' }[mode];
@@ -556,8 +556,8 @@ const MyTrip = (() => {
       newpassword:''
     }[mode];
     return `<div class="trip-shell"><div class="join-stage"><div class="join-card">
-      <span class="back-link" onclick="goToHero()">← Gear Wrangler</span>
-      <div class="eyebrow">My trip</div>
+      <span class="back-link" onclick="goToHero()">← Handbook</span>
+      <div class="eyebrow">Handbook</div>
       <h1 class="question">${title}</h1>
       <p class="subtext">${sub}</p>
       ${s.notice ? `<div class="trip-notice" role="status">${s.notice}</div>` : ''}
@@ -584,7 +584,7 @@ const MyTrip = (() => {
     return `<div class="trip-shell">${demoBar()}
       <div class="join-stage">
         <div class="join-card">
-          <span class="back-link" onclick="goToHero()">← Gear Wrangler</span>
+          <span class="back-link" onclick="goToHero()">← Handbook</span>
           <div class="eyebrow">Accepted to an expedition?</div>
           <h1 class="question">Enter your trip code.</h1>
           <p class="subtext">Your Venture Fellows send it after you're accepted.</p>
@@ -656,7 +656,7 @@ const MyTrip = (() => {
       <header class="trip-hero${big ? ' big' : ''}" ${photo ? `style="background-image:url('${photo.file}')"` : ''}>
         <div class="trip-hero-overlay"></div>
         <nav class="trip-nav">
-          <span class="trip-nav-link" onclick="goToHero()">← Gear Wrangler</span>
+          <span class="trip-nav-link" onclick="goToHero()">← Handbook</span>
           <span class="trip-nav-right">
             <span class="trip-nav-who">${esc(s.me.name)}<span class="hide-sm"> · ${esc(ROLE_LABEL[s.me.role])}</span></span>
             ${s.admin ? `<button class="trip-signout" onclick="MyTrip.openAdmin()">Admin</button>` : ''}
@@ -769,7 +769,7 @@ const MyTrip = (() => {
     const check = gearCheck(me);
     const review = reviewState(me);
     const exp = expedition();
-    let html = `<h2 class="trip-h2" tabindex="-1">My gear for this trip.</h2>`;
+    let html = `<div class="eyebrow">GearWrangler</div><h2 class="trip-h2" tabindex="-1">My gear for this trip.</h2>`;
     if(!check){
       return html + `<p class="subtext">Gear needs for this trip haven't been estimated yet.</p>`;
     }
@@ -1028,9 +1028,9 @@ const MyTrip = (() => {
     const formOpen = !!s.adminEdit;
     return `<div class="trip-shell">
       <nav class="admin-bar">
-        <span class="trip-nav-link" onclick="goToHero()">← Gear Wrangler</span>
+        <span class="trip-nav-link" onclick="goToHero()">← Handbook</span>
         <span class="trip-nav-right">
-          ${s.me ? `<button class="trip-signout" onclick="MyTrip.leaveAdmin()">My trip</button>`
+          ${s.me ? `<button class="trip-signout" onclick="MyTrip.leaveAdmin()">My expedition</button>`
             : `<button class="trip-signout" onclick="MyTrip.joinWithCode()">Join a trip</button>`}
           <button class="trip-signout" onclick="MyTrip.signOut()">Sign out</button>
         </span>
@@ -1067,7 +1067,7 @@ const MyTrip = (() => {
           <button class="btn small" type="submit">Add</button>
         </div>
         ${s.adminError ? `<p class="form-error" role="alert">${esc(s.adminError)}</p>` : ''}
-        <p class="fine-print">They need an account first: they sign up on My trip with this email. Admins can add trips, change codes, and add or remove admins.</p>
+        <p class="fine-print">They need an account first: they create an account under "Log into your expedition" with this email. Admins can add trips, change codes, and add or remove admins.</p>
       </form>`;
   }
   function adminTripHtml(t){
@@ -1505,12 +1505,12 @@ const MyTrip = (() => {
   function refreshLinks(){
     const joined = hasSession();
     const heroTab = document.getElementById('heroTripTab');
-    if(heroTab) heroTab.textContent = joined ? 'My trip' : 'Trip code';
+    if(heroTab) heroTab.textContent = joined ? 'My expedition' : 'Trip code';
     const back = document.getElementById('backToTrip');
     if(back) back.style.display = joined ? '' : 'none';
   }
   function tabHtml(){
-    return hasSession() ? `<button class="cat-tab" data-section="trip" onclick="MyTrip.open()">My trip</button>` : '';
+    return hasSession() ? `<button class="cat-tab" data-section="trip" onclick="MyTrip.open()">My expedition</button>` : '';
   }
   // Links like …/#trip or …/#trip=PATAGONIA. The demo also has personal links: …/#trip=PATAGONIA&me=m-abc.
   async function fromLink(){
