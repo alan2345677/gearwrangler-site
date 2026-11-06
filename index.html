@@ -11,6 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B211C'/%3E%3Cpath d='M16 7 27 25H5z' fill='%23FAFAF7'/%3E%3Cpath d='M16 15l5 10H11z' fill='%231B211C'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="trip.css">
 <style>
   :root{
     --paper:#FAFAF7;
@@ -476,6 +477,7 @@
       <nav class="hero-nav">
         <span class="hero-logo">Gear Wrangler</span>
         <span class="hero-nav-tabs">
+          <span class="hero-tab" id="heroTripTab" onclick="MyTrip.open()">Trip code</span>
           <span class="hero-tab" onclick="openMySetup()">My gear (<span id="heroKitCount">0</span>)</span>
         </span>
       </nav>
@@ -506,6 +508,11 @@
         <div class="tool-section">
           <div class="tool-label">Shop</div>
           <p>Four questions. Your best pick, not everyone's.</p>
+        </div>
+
+        <div class="tool-section">
+          <div class="tool-label">Accepted to a trip?</div>
+          <p>Enter your trip code. Meet your crew, get your gear checked, message your staff, and book your 1-1. <span class="text-link" onclick="MyTrip.open()">Enter a code →</span></p>
         </div>
       </div>
     </div>
@@ -572,6 +579,7 @@
 
   <!-- MY GEAR -->
   <section class="screen" id="screen-mysetup">
+    <span class="back-link" id="backToTrip" style="display:none;" onclick="MyTrip.open('gear')">← Back to my trip</span>
     <h1 class="question" style="margin-top:6px;">My gear.</h1>
     <p class="subtext">Add what you own. We'll show what it's ready for.</p>
     <div id="planPicker" class="plan-picker"></div>
@@ -630,12 +638,19 @@
     </details>
   </section>
 
+  <!-- MY TRIP (trip.js) -->
+  <section class="screen" id="screen-trip">
+    <div id="tripContent"></div>
+  </section>
+
   <footer class="site-footer">
-    <p>Your gear stays in this browser. Tag photos never leave your device. No accounts, no tracking.</p>
+    <p>My gear stays in this browser unless you join a trip. Tag photos never leave your device. No tracking.</p>
   </footer>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="trip.js"></script>
 <script>
 const PADS = [
   { id:'nemo-tensor-all-season', name:'NEMO Tensor All-Season', type:'Insulated air', source:'brand',
@@ -1524,7 +1539,8 @@ function buildTabs(){
   const count = Object.values(kitState).filter(Boolean).length;
   el.innerHTML = `<button class="cat-tab" data-section="trips" onclick="openExpeditionFinder()">Trips</button>`
     + `<button class="cat-tab" data-section="mygear" onclick="openMySetup()">My gear (<span id="kitTabCount">${count}</span>)</button>`
-    + `<button class="cat-tab" data-section="shop" onclick="openShop()">Shop</button>`;
+    + `<button class="cat-tab" data-section="shop" onclick="openShop()">Shop</button>`
+    + MyTrip.tabHtml();
   const current = document.querySelector('.screen.active');
   markActiveTab(current ? current.id.replace('screen-', '') : 'hero');
 }
@@ -1551,6 +1567,7 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   document.body.classList.toggle('hero-mode', id === 'hero');
+  document.body.classList.toggle('trip-mode', id === 'trip');
   window.scrollTo({top:0, behavior:'smooth'});
   if(id !== 'hero') focusHeading(document.getElementById('screen-'+id));
   markActiveTab(id);
@@ -1560,6 +1577,7 @@ function showScreen(id){
 function sectionForScreen(id){
   if(id === 'expeditions') return 'trips';
   if(id === 'mysetup') return 'mygear';
+  if(id === 'trip') return 'trip';
   if(id === 'shop' || id === 'results' || STEP_IDS.includes(id)) return 'shop';
   return null;
 }
@@ -1958,6 +1976,7 @@ function kitEntryFor(cat, item){
 function gearChanged(){
   persistKit();
   updateKitButton();
+  MyTrip.gearChanged();
 }
 // From the Shop results.
 function saveToKit(itemId){
@@ -2008,23 +2027,25 @@ function updateKitButton(){
 }
 
 // ---------- How capable is this gear? ----------
-function itemProduct(cat){
-  const saved = kitState[cat];
+// The item* functions read My gear. The entry* versions take any saved item, so My trip
+// can check other people's gear too.
+function itemProduct(cat){ return entryProduct(cat, kitState[cat]); }
+function entryProduct(cat, saved){
   if(!saved || saved.custom) return null;
   return allProducts(CATEGORIES[cat]).find(p => p.id === String(saved.id).replace(/-used$/, '')) || null;
 }
 // The hardest condition an item is good for, as an index into its category's options. -1 means none.
-function itemLevel(cat){
-  const saved = kitState[cat];
+function itemLevel(cat){ return entryLevel(cat, kitState[cat]); }
+function entryLevel(cat, saved){
   if(!saved) return -1;
   if(saved.custom) return saved.specs ? tripLevel(cat, saved.specs) : optionIndex(cat, saved.level);
-  const product = itemProduct(cat);
+  const product = entryProduct(cat, saved);
   return product ? tripLevel(cat, product) : -1;
 }
 // A listed product, or the numbers read from a tag.
-function itemSpecs(cat){
-  const saved = kitState[cat];
-  return itemProduct(cat) || (saved && saved.specs) || null;
+function itemSpecs(cat){ return entrySpecs(cat, kitState[cat]); }
+function entrySpecs(cat, saved){
+  return entryProduct(cat, saved) || (saved && saved.specs) || null;
 }
 function myGearLevels(){
   const levels = {};
@@ -2737,6 +2758,7 @@ async function loadExpeditions(){
   }
   if(document.getElementById('screen-expeditions').classList.contains('active')) renderFinder();
   if(document.getElementById('screen-mysetup').classList.contains('active')) renderMySetup();
+  MyTrip.dataReady();
 }
 
 // ---------- What a trip needs, shared by Trips, My gear, and Shop ----------
@@ -3012,6 +3034,7 @@ loadPrices();
 loadExpeditions();
 initHeroVideo();
 watchClickables();
+MyTrip.init();
 </script>
 </body>
 </html>
