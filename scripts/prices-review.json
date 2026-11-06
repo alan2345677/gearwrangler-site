@@ -1,15 +1,6 @@
 {
- "checkedOn": "2026-11-05",
- "held": [
-  {
-   "id": "marmot-trestles-30",
-   "name": "Marmot Trestles 30",
-   "original": null,
-   "price": 179.0,
-   "reason": "read $179 but expected about $130",
-   "url": "https://www.marmot.com/p/trestles-elite-eco-30-sleeping-bag/SP_2948365/AFS_195115321598.html"
-  }
- ],
+ "checkedOn": "2026-11-06",
+ "held": [],
  "notRead": [
   {
    "id": "exped-ultra-6-5r",
@@ -22,19 +13,9 @@
    "reason": "store refused the check (403)"
   },
   {
-   "id": "rei-helix-insulated",
-   "name": "REI Co-op Helix Insulated",
-   "reason": "store refused the check (403)"
-  },
-  {
    "id": "klymit-static-v2",
    "name": "Klymit Static V2",
    "reason": "no price found on the page"
-  },
-  {
-   "id": "rei-magma-15",
-   "name": "REI Co-op Magma 15",
-   "reason": "store refused the check (403)"
   },
   {
    "id": "mountainhardwear-phantom-0",
@@ -50,11 +31,6 @@
    "id": "exped-terra-15",
    "name": "Exped Terra 15",
    "reason": "no price found on the page"
-  },
-  {
-   "id": "rei-halfdome-sl2plus",
-   "name": "REI Co-op Half Dome SL 2+",
-   "reason": "store refused the check (403)"
   },
   {
    "id": "rei-halfdome-3plus",
@@ -92,11 +68,6 @@
    "reason": "store refused the check (403)"
   },
   {
-   "id": "rei-trailmade-60",
-   "name": "REI Co-op Trailmade 60",
-   "reason": "store refused the check (403)"
-  },
-  {
    "id": "osprey-aether-65",
    "name": "Osprey Aether 65",
    "reason": "store refused the check (403)"
@@ -107,14 +78,9 @@
    "reason": "no price found on the page"
   },
   {
-   "id": "mysteryranch-glacier",
-   "name": "Mystery Ranch Glacier",
-   "reason": "no price found on the page"
-  },
-  {
    "id": "montbell-versalite",
    "name": "Montbell Versalite",
-   "reason": "no connection"
+   "reason": "no price found on the page"
   },
   {
    "id": "patagonia-torrentshell-3l",
@@ -155,6 +121,11 @@
    "id": "merrell-moabspeed2-mid",
    "name": "Merrell Moab Speed 2 Mid GTX",
    "reason": "no price found on the page"
+  },
+  {
+   "id": "hoka-speedgoat6",
+   "name": "HOKA Speedgoat 6",
+   "reason": "page returned an error (406)"
   },
   {
    "id": "danner-trail-2650",
@@ -210,16 +181,6 @@
    "id": "jetboil-stash",
    "name": "Jetboil Stash",
    "reason": "no price found on the page"
-  },
-  {
-   "id": "jetboil-minimo",
-   "name": "Jetboil MiniMo",
-   "reason": "no price found on the page"
-  },
-  {
-   "id": "coleman-fyrestorm",
-   "name": "Coleman FyreStorm",
-   "reason": "store refused the check (403)"
   }
  ],
  "notTracked": [
@@ -299,11 +260,6 @@
    "reason": "links to an Amazon search, not one product"
   },
   {
-   "id": "hoka-speedgoat5",
-   "name": "HOKA Speedgoat 5",
-   "reason": "only out-of-stock listings at this store"
-  },
-  {
    "id": "nortiv8-hiking-boots",
    "name": "NORTIV 8 Hiking Boots",
    "reason": "links to an Amazon search, not one product"
@@ -312,11 +268,6 @@
    "id": "xpeti-waterproof-boots",
    "name": "XPETI Waterproof Hiking Boots",
    "reason": "links to an Amazon search, not one product"
-  },
-  {
-   "id": "biolite-800",
-   "name": "BioLite 800",
-   "reason": "store now sells the 800 Pro, a different model at a different price"
   },
   {
    "id": "vitchelo-v800",
@@ -365,9 +316,9 @@
   }
  ],
  "summary": {
-  "held": 1,
-  "not_read": 42,
-  "not_tracked": 28,
-  "updated": 64
+  "held": 0,
+  "not_read": 36,
+  "not_tracked": 26,
+  "updated": 65
  }
 }
