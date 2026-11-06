@@ -18,8 +18,8 @@
 // From Supabase > Project Settings > API. The anon key is meant to be public:
 // the database's rules decide what each signed-in person can see.
 const TRIP_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://aqvbqmyvxdxangtguajq.supabase.co',
+  supabaseAnonKey: 'sb_publishable_lwjctElIoJj0rd3wazJoIA_gusFrce6'
 };
 
 const DemoTripData = (() => {
