@@ -250,7 +250,8 @@ begin
   end;
   if (ok) is not true then raise exception 'Check failed: %', 'adding an admin needs an existing account'; end if;
   j := public.admin_add_admin(' ZZ-VF@Check.Invalid ');
-  if (jsonb_array_length(j) = 2) is not true then raise exception 'Check failed: %', 'admins can add an admin by email (any case)'; end if;
+  -- (Looks for the made-up person rather than counting, since real admins may exist too.)
+  if (exists (select 1 from jsonb_array_elements(j) x where (x->>'userId')::uuid = u_vf)) is not true then raise exception 'Check failed: %', 'admins can add an admin by email (any case)'; end if;
   begin
     perform public.admin_remove_admin(u_adm); ok := false;
   exception when others then ok := sqlerrm like '%yourself%';
@@ -275,7 +276,7 @@ begin
 
   perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
   j := public.admin_remove_admin(u_vf);
-  if (jsonb_array_length(j) = 1) is not true then raise exception 'Check failed: %', 'admins can remove another admin'; end if;
+  if (not exists (select 1 from jsonb_array_elements(j) x where (x->>'userId')::uuid = u_vf)) is not true then raise exception 'Check failed: %', 'admins can remove another admin'; end if;
   perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
   if (public.is_admin()) is not false then raise exception 'Check failed: %', 'a removed admin is no longer an admin'; end if;
 
