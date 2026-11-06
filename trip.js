@@ -1,20 +1,28 @@
 // =====================================================================
 // MY TRIP: the area for people accepted onto an expedition.
 //
-// People join with a shared trip code. Staff (Venture Fellows and guides) use a
-// separate staff code for the same trip, which unlocks the gear check.
+// People sign in with an email and password, then join with a shared trip code.
+// Staff (Venture Fellows and guides) use a separate staff code for the same trip,
+// which unlocks the gear check.
 //
-// THIS IS A DEMO. TripData below keeps everything in this browser and starts with
-// made-up people. To go live, replace TripData with a version backed by a shared
-// database (Supabase). MyTrip only talks to TripData through its async functions,
-// so nothing else needs to change.
+// Two data layers, same functions:
+//   LiveTripData  the real thing, backed by Supabase (rules in supabase/setup.sql).
+//   DemoTripData  keeps everything in this browser, with made-up people.
+// The site uses Live once TRIP_CONFIG below is filled in, and the demo until then.
 //
 // Loaded before index.html's main script; MyTrip.init() runs from its INIT block.
 // Uses index.html's helpers: esc, safeUrl, tripNeeds, meetsNeed, entryLevel,
 // entrySpecs, shortfallText, shortNeed, needPhrase, gearLabel, kitState, etc.
 // =====================================================================
 
-const TripData = (() => {
+// From Supabase > Project Settings > API. The anon key is meant to be public:
+// the database's rules decide what each signed-in person can see.
+const TRIP_CONFIG = {
+  supabaseUrl: '',
+  supabaseAnonKey: ''
+};
+
+const DemoTripData = (() => {
   const KEY = 'gearwrangler_tripDemo_v1';
 
   // Each trip has a participant code and a staff code.
@@ -139,25 +147,40 @@ const TripData = (() => {
     return d[store][tripId];
   }
 
+  async function findCode(code){
+    const c = normal(code);
+    if(!c) return null;
+    for(const t of TRIPS){
+      if(c === t.code) return { trip:tripView(t, 'participant'), role:'participant' };
+      if(c === t.staffCode) return { trip:tripView(t, 'staff'), role:'staff' };
+    }
+    return null;
+  }
+  async function saveMember(tripId, member){
+    const members = list('members', tripId);
+    const i = members.findIndex(m => m.id === member.id);
+    if(i >= 0) members[i] = clone(member); else members.push(clone(member));
+    save();
+  }
+
   return {
-    isDemo:true,
-    normal, newId, gearSig,
-    async findCode(code){
-      const c = normal(code);
-      if(!c) return null;
-      for(const t of TRIPS){
-        if(c === t.code) return { trip:tripView(t, 'participant'), role:'participant' };
-        if(c === t.staffCode) return { trip:tripView(t, 'staff'), role:'staff' };
-      }
-      return null;
+    isDemo:true, needsAuth:false,
+    normal, newId, gearSig, findCode, saveMember,
+    // The demo remembers which made-up person you are in this browser.
+    async myMembership(session){
+      if(!session || !session.code) return null;
+      const found = await findCode(session.code);
+      if(!found || !list('members', found.trip.id).some(m => m.id === session.memberId)) return null;
+      return { trip:found.trip, role:found.role, code:normal(session.code), memberId:session.memberId };
+    },
+    async joinTrip(code, member){
+      const found = await findCode(code);
+      if(!found) return null;
+      const m = Object.assign({ id:newId('m') }, member);
+      await saveMember(found.trip.id, m);
+      return m.id;
     },
     async listMembers(tripId){ return clone(list('members', tripId)); },
-    async saveMember(tripId, member){
-      const members = list('members', tripId);
-      const i = members.findIndex(m => m.id === member.id);
-      if(i >= 0) members[i] = clone(member); else members.push(clone(member));
-      save();
-    },
     async listMessages(tripId){ return clone(list('messages', tripId)); },
     async postMessage(tripId, message){
       list('messages', tripId).push(clone(message));
@@ -169,6 +192,93 @@ const TripData = (() => {
     }
   };
 })();
+
+
+// ---------- The real thing: Supabase ----------
+const LiveTripData = (() => {
+  let client = null;
+  function sb(){
+    if(!client){
+      if(!window.supabase || !window.supabase.createClient) throw new Error('offline');
+      client = window.supabase.createClient(TRIP_CONFIG.supabaseUrl, TRIP_CONFIG.supabaseAnonKey, {
+        auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'implicit' }
+      });
+    }
+    return client;
+  }
+  async function run(query){
+    const { data, error } = await query;
+    if(error) throw error;
+    return data;
+  }
+  const siteUrl = () => location.origin + location.pathname;
+  const { normal } = DemoTripData;
+
+  // Database rows, in the shape the screens expect.
+  const memberOf = r => ({ id:r.id, name:r.name, about:r.about || '', role:r.role, bookingUrl:r.booking_url || '',
+    gear:r.gear || {}, gearUpdatedAt:r.gear_updated_at || null, review:r.review || null,
+    oneOnOne:r.one_on_one || null, joinedAt:r.joined_at });
+  const messageOf = r => ({ id:r.id, at:r.at, authorId:r.author_id, authorName:r.author_name,
+    authorRole:r.author_role, text:r.text, thread:r.thread });
+
+  return {
+    isDemo:false, needsAuth:true,
+    normal, newId:DemoTripData.newId, gearSig:DemoTripData.gearSig,
+
+    // Accounts
+    async user(){
+      const { data } = await sb().auth.getSession();
+      return data && data.session ? data.session.user : null;
+    },
+    async signIn(email, password){ await run(sb().auth.signInWithPassword({ email, password })); },
+    async signUp(email, password){
+      const d = await run(sb().auth.signUp({ email, password, options:{ emailRedirectTo:siteUrl() } }));
+      return { confirm:!d.session };
+    },
+    async sendReset(email){ await run(sb().auth.resetPasswordForEmail(email, { redirectTo:siteUrl() })); },
+    async setPassword(password){ await run(sb().auth.updateUser({ password })); },
+    async signOut(){ await sb().auth.signOut(); },
+
+    // Trips
+    async findCode(code){
+      const c = normal(code);
+      if(!c) return null;
+      const d = await run(sb().rpc('find_trip_code', { p_code:c }));
+      if(d && d.error === 'too_many') throw new Error('too_many');
+      return d || null;
+    },
+    async myMembership(){
+      const d = await run(sb().rpc('my_trip'));
+      return d ? { trip:d.trip, role:d.role, code:d.trip.code, memberId:d.memberId } : null;
+    },
+    async joinTrip(code, m){
+      return run(sb().rpc('join_trip', { p_code:normal(code), p_name:m.name, p_about:m.about || '',
+        p_role:m.role, p_booking_url:m.bookingUrl || null, p_gear:m.gear || {} }));
+    },
+    async listMembers(tripId){
+      return (await run(sb().rpc('trip_members', { p_trip:tripId }))).map(memberOf);
+    },
+    // The database decides what actually changes (see members_guard in setup.sql).
+    async saveMember(tripId, m){
+      await run(sb().from('members').update({
+        name:m.name, about:m.about || '', role:m.role, booking_url:m.bookingUrl || null,
+        gear:m.gear || {}, gear_updated_at:m.gearUpdatedAt || null,
+        one_on_one:m.oneOnOne || null, review:m.review || null
+      }).eq('id', m.id));
+    },
+    async listMessages(tripId){
+      return (await run(sb().from('messages').select('*').eq('trip_id', tripId).order('at'))).map(messageOf);
+    },
+    // Name, role, and time are filled in by the database.
+    async postMessage(tripId, m){
+      await run(sb().from('messages').insert({ trip_id:tripId, author_id:m.authorId, author_name:'', author_role:'',
+        thread:m.thread || null, text:m.text }));
+    },
+    reset(){}
+  };
+})();
+
+const TripData = TRIP_CONFIG.supabaseUrl && TRIP_CONFIG.supabaseAnonKey ? LiveTripData : DemoTripData;
 
 
 const MyTrip = (() => {
@@ -200,7 +310,8 @@ const MyTrip = (() => {
   let s = freshState();
   function freshState(){
     return { step:'code', view:'home', trip:null, role:null, code:null, me:null, members:[], messages:[],
-      error:'', notice:'', msgTab:'board', thread:null, open:null, editing:false, loaded:false };
+      error:'', notice:'', msgTab:'board', thread:null, open:null, editing:false, loaded:false,
+      checked:false, user:null, authMode:'signin', email:'', busy:false };
   }
 
   // ---------- Session: which trip and which person, in this browser ----------
@@ -215,16 +326,30 @@ const MyTrip = (() => {
   }
   function hasSession(){ return !!readSession(); }
 
+  // Works out where this person is: signed out, signed in but not on a trip yet, or on a trip.
+  // The saved session is only a hint for the nav (and who you are in the demo).
   async function resume(){
-    const session = readSession();
-    if(!session) return false;
-    const found = await TripData.findCode(session.code);
-    if(!found){ writeSession(null); return false; }
-    s.trip = found.trip; s.role = found.role; s.code = session.code;
-    await refresh(session.memberId);
-    if(!s.me){ s.step = 'profile'; return false; }
+    s.checked = true;
+    if(TripData.needsAuth){
+      s.user = await TripData.user();
+      if(!s.user){ writeSession(null); s.step = 'signin'; return false; }
+    }
+    const found = await TripData.myMembership(readSession());
+    if(found){
+      s.trip = found.trip; s.role = found.role; s.code = found.code;
+      await refresh(found.memberId);
+    }
+    if(!found || !s.me){
+      writeSession(null);
+      s.trip = null; s.me = null; s.loaded = false;
+      if(s.step !== 'profile') s.step = 'code';
+      refreshLinks(); buildTabs();
+      return false;
+    }
+    writeSession({ code:found.code, memberId:found.memberId });
     s.step = 'in';
     s.loaded = true;
+    refreshLinks(); buildTabs();
     return true;
   }
   async function refresh(memberId){
@@ -320,10 +445,19 @@ const MyTrip = (() => {
 
   // ---------- Screens ----------
   async function open(view){
-    if(!s.loaded && hasSession()) await resume();
     if(view && VIEWS.includes(view)) s.view = view;
     s.notice = '';
     updateProgress(null);
+    if(!s.checked){
+      s.step = 'loading';
+      render();
+      showScreen('trip');
+      try{ await resume(); }
+      catch(e){ console.error(e); s.checked = false; s.step = 'error'; s.error = friendly(e); }
+      render();
+      focusHeading(document.getElementById('screen-trip'));
+      return;
+    }
     render();
     showScreen('trip');
   }
@@ -335,13 +469,80 @@ const MyTrip = (() => {
     const tabs = document.querySelector('.trip-tabs');
     if(tabs && view !== 'home') tabs.scrollIntoView({ block:'start' });
     else window.scrollTo({ top:0 });
+    // Pick up what others have posted or changed since.
+    if(!TripData.isDemo && s.step === 'in') refresh().then(render).catch(e => console.error(e));
   }
   function render(){
     const el = document.getElementById('tripContent');
     if(!el) return;
-    if(s.step === 'code') el.innerHTML = codeHtml();
+    if(s.step === 'signin') el.innerHTML = authHtml();
+    else if(s.step === 'loading' || s.step === 'error') el.innerHTML = statusHtml();
+    else if(s.step === 'code') el.innerHTML = codeHtml();
     else if(s.step === 'profile') el.innerHTML = profileHtml();
     else el.innerHTML = shellHtml();
+  }
+
+  // Plain-language versions of what the server says.
+  function friendly(e){
+    const msg = String((e && (e.message || e.error_description)) || e || '');
+    const code = (e && e.code) || '';
+    if(msg === 'too_many') return 'Too many wrong codes. Wait an hour, then try again.';
+    if(/invalid login credentials/i.test(msg)) return "That email and password don't match.";
+    if(/already (been )?registered|already exists/i.test(msg) || code === 'user_already_exists') return 'That email already has an account. Sign in instead.';
+    if(/email not confirmed/i.test(msg)) return 'Confirm your email first: check your inbox.';
+    if(/rate limit|too many requests/i.test(msg) || /rate_limit/.test(code)) return 'Too many tries just now. Wait a few minutes, then try again.';
+    if(/should be different|same as the old/i.test(msg)) return 'Pick a password you haven’t used here before.';
+    if(/password/i.test(msg) && /(at least|short|weak)/i.test(msg)) return 'Pick a stronger password: at least 8 characters.';
+    if(/email/i.test(msg) && /invalid/i.test(msg)) return 'Check the email address.';
+    if(/session.*missing|jwt|not authenticated|sign in first/i.test(msg)) return 'Your sign-in expired. Sign in again.';
+    if(/fetch|network|offline|load failed/i.test(msg)) return "Couldn't reach the server. Check your connection and try again.";
+    return 'Something went wrong. Try again.';
+  }
+
+  // Loading, or the server couldn't be reached.
+  function statusHtml(){
+    const failed = s.step === 'error';
+    return `<div class="trip-shell"><div class="join-stage"><div class="join-card">
+      <span class="back-link" onclick="goToHero()">← Gear Wrangler</span>
+      ${failed ? `<h1 class="question">Couldn't open your trip.</h1>
+        <p class="subtext">${esc(s.error)}</p>
+        <button class="btn" onclick="MyTrip.open()">Try again</button>`
+      : `<p class="subtext" role="status">Loading…</p>`}
+      </div></div></div>`;
+  }
+
+  // Step 0 (real site only): sign in or create an account.
+  function authHtml(){
+    const mode = s.authMode;
+    const title = { signin:'Sign in to My trip.', signup:'Create your account.', reset:'Reset your password.', newpassword:'Pick a new password.' }[mode];
+    const sub = { signin:"Accepted to an expedition? Sign in, then enter your trip code.",
+      signup:'Any email works. Your trip code comes next.', reset:"We'll email you a link to pick a new one.",
+      newpassword:'At least 8 characters.' }[mode];
+    const button = { signin:'Sign in', signup:'Create account', reset:'Email me a link', newpassword:'Save password' }[mode];
+    const askEmail = mode !== 'newpassword';
+    const askPassword = mode !== 'reset';
+    const links = {
+      signin:`New here? <span class="text-link" onclick="MyTrip.authMode('signup')">Create an account</span> · <span class="text-link" onclick="MyTrip.authMode('reset')">Forgot password?</span>`,
+      signup:`Have an account? <span class="text-link" onclick="MyTrip.authMode('signin')">Sign in</span>`,
+      reset:`<span class="text-link" onclick="MyTrip.authMode('signin')">Back to sign in</span>`,
+      newpassword:''
+    }[mode];
+    return `<div class="trip-shell"><div class="join-stage"><div class="join-card">
+      <span class="back-link" onclick="goToHero()">← Gear Wrangler</span>
+      <div class="eyebrow">My trip</div>
+      <h1 class="question">${title}</h1>
+      <p class="subtext">${sub}</p>
+      ${s.notice ? `<div class="trip-notice" role="status">${s.notice}</div>` : ''}
+      <form onsubmit="event.preventDefault(); MyTrip.authSubmit();" novalidate>
+        ${askEmail ? `<label class="plan-label" for="authEmail">Email</label>
+        <input id="authEmail" class="search-box" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="${esc(s.email)}">` : ''}
+        ${askPassword ? `<label class="plan-label" for="authPassword">${mode === 'signin' ? 'Password' : 'New password'}</label>
+        <input id="authPassword" class="search-box" type="password" autocomplete="${mode === 'signin' ? 'current-password' : 'new-password'}">` : ''}
+        ${s.error ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
+        <button class="btn" type="submit"${s.busy ? ' disabled' : ''}>${s.busy ? 'One moment…' : button}</button>
+      </form>
+      ${links ? `<p class="fine-print">${links}</p>` : ''}
+    </div></div></div>`;
   }
 
   function demoBar(){
@@ -368,6 +569,7 @@ const MyTrip = (() => {
           <div class="demo-people"><div class="plan-label">Or look around as someone already on the trip</div>
             ${DEMO_PEOPLE.map(p => `<button class="option-btn small" onclick="MyTrip.demoAs('${p.id}')">${esc(p.name)}<span class="opt-sub">${esc(ROLE_LABEL[p.role])}</span></button>`).join('')}
           </div>` : ''}
+          ${s.user ? `<p class="fine-print">Signed in as ${esc(s.user.email)}. <span class="text-link" onclick="MyTrip.signOut()">Sign out</span></p>` : ''}
         </div>
       </div></div>`;
   }
@@ -525,6 +727,7 @@ const MyTrip = (() => {
       <div class="person-body"><div class="person-name">${esc(m.name)}</div></div>${right}</div>`;
   }
   function deviceHtml(){
+    if(!TripData.isDemo) return s.user ? `<p class="fine-print trip-device">Signed in as ${esc(s.user.email)}. Sign in with it on any device.</p>` : '';
     return `<details class="info trip-device"><summary>Using another device?</summary>
       <p>Open your personal link there. Keep it to yourself: it opens your profile.</p>
       <p><span class="text-link" onclick="MyTrip.copy('${esc(personalLink())}', 'Personal link copied.')">Copy my personal link</span></p></details>`;
@@ -727,10 +930,65 @@ const MyTrip = (() => {
   }
 
   // ---------- Actions ----------
+  function authMode(mode){
+    s.authMode = mode;
+    s.error = ''; s.notice = '';
+    render();
+    const el = document.getElementById(mode === 'newpassword' ? 'authPassword' : 'authEmail');
+    if(el) el.focus();
+  }
+  async function authSubmit(){
+    if(s.busy) return;
+    const mode = s.authMode;
+    const email = val('authEmail');
+    const pw = document.getElementById('authPassword');
+    const password = pw ? pw.value : '';
+    if(mode !== 'newpassword') s.email = email;
+    s.error = ''; s.notice = '';
+    if(mode !== 'newpassword' && !/^\S+@\S+\.\S+$/.test(email)) s.error = email ? 'Check the email address.' : 'Add your email.';
+    else if(mode !== 'reset' && !password) s.error = 'Add your password.';
+    else if((mode === 'signup' || mode === 'newpassword') && password.length < 8) s.error = 'Use at least 8 characters.';
+    if(s.error){ render(); return; }
+    s.busy = true;
+    render();
+    try{
+      if(mode === 'signin') await TripData.signIn(email, password);
+      else if(mode === 'signup'){
+        const result = await TripData.signUp(email, password);
+        if(result.confirm){
+          s.busy = false; s.authMode = 'signin';
+          s.notice = 'Check your email to confirm, then sign in here.';
+          render();
+          return;
+        }
+      }
+      else if(mode === 'reset'){
+        await TripData.sendReset(email);
+        s.busy = false; s.authMode = 'signin';
+        s.notice = 'If that email has an account, a link is on its way. It can take a few minutes.';
+        render();
+        return;
+      }
+      else await TripData.setPassword(password);
+      s.busy = false; s.authMode = 'signin';
+      if(mode === 'newpassword') s.notice = 'Password saved.';
+      await resume();
+      render();
+      focusHeading(document.getElementById('screen-trip'));
+      if(s.step === 'code' && s.pendingCode) await join();
+    }catch(e){
+      console.error(e);
+      s.busy = false;
+      s.error = friendly(e);
+      render();
+    }
+  }
   async function join(){
     const code = val('tripCode');
     s.pendingCode = code;
-    const found = await TripData.findCode(code);
+    let found = null;
+    try{ found = await TripData.findCode(code); }
+    catch(e){ console.error(e); s.error = friendly(e); render(); return; }
     if(!found){
       s.error = code ? "That code didn't work. Check the message from your Venture Fellows." : 'Enter your trip code.';
       render();
@@ -750,31 +1008,36 @@ const MyTrip = (() => {
     const staff = s.role === 'staff';
     const booking = staff ? val('tripBooking') : '';
     if(booking && !safeUrl(booking)){ s.error = 'The booking link should start with https://'; render(); return; }
-    const member = { id:TripData.newId('m'), name, about:val('tripAbout'), joinedAt:new Date().toISOString(),
+    const member = { name, about:val('tripAbout'), joinedAt:new Date().toISOString(),
       role:staff ? (val('tripRole') || 'vf') : 'participant' };
     if(staff) member.bookingUrl = booking;
     else { member.gear = snapshot(); member.gearUpdatedAt = new Date().toISOString(); }
-    await TripData.saveMember(s.trip.id, member);
-    writeSession({ code:s.code, memberId:member.id });
-    await refresh(member.id);
-    s.step = 'in'; s.view = 'home'; s.error = ''; s.loaded = true;
-    refreshLinks();
-    buildTabs();
+    if(s.busy) return;
+    s.busy = true;
+    let memberId = null;
+    try{ memberId = await TripData.joinTrip(s.code, member); }
+    finally{ s.busy = false; }
+    if(!memberId){ s.error = "That code didn't work. Go back and check it."; render(); return; }
+    writeSession({ code:s.code, memberId });
+    await resume();
+    s.view = 'home'; s.error = '';
     render();
     window.scrollTo({ top:0 });
     focusHeading(document.getElementById('screen-trip'));
   }
   function startOver(){
-    s = freshState();
+    s.step = 'code'; s.trip = null; s.role = null; s.code = null; s.error = '';
     render();
   }
-  function signOut(){
+  async function signOut(){
     const message = TripData.isDemo
       ? 'Sign out? You can come back as anyone in the demo.'
-      : 'Sign out on this device? To get back in as you, open your personal link (Home, then “Using another device?”). Entering the code again starts a new profile.';
+      : 'Sign out on this device?';
     if(!confirm(message)) return;
+    if(TripData.needsAuth){ try{ await TripData.signOut(); }catch(e){ console.error(e); } }
     writeSession(null);
     s = freshState();
+    if(TripData.needsAuth){ s.step = 'signin'; s.checked = true; }
     refreshLinks();
     buildTabs();
     render();
@@ -907,12 +1170,14 @@ const MyTrip = (() => {
   // My gear changed: keep this person's trip copy in step.
   async function gearChanged(){
     if(!hasSession()) return;
-    if(!s.loaded) await resume();
-    if(!s.me || s.me.role !== 'participant') return;
-    s.me.gear = snapshot();
-    s.me.gearUpdatedAt = new Date().toISOString();
-    await TripData.saveMember(s.trip.id, s.me);
-    await refresh();
+    try{
+      if(!s.checked) await resume();
+      if(!s.me || s.me.role !== 'participant') return;
+      s.me.gear = snapshot();
+      s.me.gearUpdatedAt = new Date().toISOString();
+      await TripData.saveMember(s.trip.id, s.me);
+      await refresh();
+    }catch(e){ console.error('Could not sync gear to the trip', e); }
   }
   // The expedition list finished loading.
   function dataReady(){
@@ -929,7 +1194,7 @@ const MyTrip = (() => {
   function tabHtml(){
     return hasSession() ? `<button class="cat-tab" data-section="trip" onclick="MyTrip.open()">My trip</button>` : '';
   }
-  // Links like …/#trip, …/#trip=PATAGONIA, or a personal link …/#trip=PATAGONIA&me=m-abc.
+  // Links like …/#trip or …/#trip=PATAGONIA. The demo also has personal links: …/#trip=PATAGONIA&me=m-abc.
   async function fromLink(){
     const hash = location.hash || '';
     if(!hash.startsWith('#trip')) return false;
@@ -937,7 +1202,7 @@ const MyTrip = (() => {
     const code = params.get('trip');
     const me = params.get('me');
     history.replaceState(null, '', location.pathname + location.search);
-    if(code && me){
+    if(code && me && TripData.isDemo){
       const found = await TripData.findCode(code);
       const members = found ? await TripData.listMembers(found.trip.id) : [];
       if(found && members.some(m => m.id === me)){
@@ -953,12 +1218,43 @@ const MyTrip = (() => {
     if(s.step === 'code' && s.pendingCode) await join();
     return true;
   }
-  function init(){
+  // Coming back from an emailed link (password reset, or email confirmation if that's turned on).
+  async function fromAuthLink(){
+    const hash = location.hash || '';
+    if(!TripData.needsAuth || !/(access_token|error_description)=/.test(hash)) return false;
+    const params = new URLSearchParams(hash.slice(1));
+    try{ await TripData.user(); }catch(e){ console.error(e); }  // lets Supabase read the link
+    history.replaceState(null, '', location.pathname + location.search);
+    if(params.get('error_description')){
+      s.step = 'signin'; s.checked = true; s.authMode = 'reset';
+      s.error = 'That link expired or was already used. Send yourself a new one.';
+    } else if(params.get('type') === 'recovery'){
+      s.step = 'signin'; s.checked = true; s.authMode = 'newpassword';
+    }
+    await open();
+    return true;
+  }
+  async function init(){
     refreshLinks();
+    if(await fromAuthLink()) return;
     fromLink();
   }
 
-  return { init, open, go, join, createProfile, startOver, signOut, demoAs, resetDemo, editProfile, cancelEdit, saveProfile,
-    toggle, openMember, review, msgTab, openThread, post, demoBooking, saveBooking, clearBooking, saveBookingLink,
+  // Anything that talks to the server shows a plain message if it fails, instead of doing nothing.
+  const guard = fn => async (...args) => {
+    try{ return await fn(...args); }
+    catch(e){
+      console.error(e);
+      s.busy = false;
+      if(s.step === 'in'){ s.error = ''; s.notice = esc(friendly(e)); }
+      else s.error = friendly(e);
+      render();
+    }
+  };
+
+  return { init, open, go, authMode, authSubmit, join:guard(join), createProfile:guard(createProfile), startOver, signOut,
+    demoAs:guard(demoAs), resetDemo, editProfile, cancelEdit, saveProfile:guard(saveProfile),
+    toggle, openMember, review:guard(review), msgTab, openThread, post:guard(post), demoBooking,
+    saveBooking:guard(saveBooking), clearBooking:guard(clearBooking), saveBookingLink:guard(saveBookingLink),
     copy, gearChanged, dataReady, refreshLinks, tabHtml, hasSession };
 })();

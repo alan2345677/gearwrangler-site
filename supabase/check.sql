@@ -1,0 +1,149 @@
+-- =====================================================================
+-- Gear Wrangler: check the My trip rules.
+--
+-- Run this after setup.sql: paste it into a NEW query in the SQL Editor and click Run.
+-- It makes up a few people and two trips, tries everything they should and
+-- shouldn't be able to do, then removes them. Nothing is left behind.
+--
+--   "All checks passed"  -> the rules work.
+--   An error             -> copy the message and send it to Claude.
+-- =====================================================================
+
+do $$
+declare
+  u_vf  uuid := gen_random_uuid();
+  u_p1  uuid := gen_random_uuid();
+  u_p2  uuid := gen_random_uuid();
+  u_out uuid := gen_random_uuid();
+  u_b   uuid := gen_random_uuid();
+  m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid;
+  j jsonb; n int; ok boolean; i int;
+begin
+  -- Setup, as the dashboard would.
+  insert into auth.users (id, email) values
+    (u_vf,  'zz-vf@check.invalid'),  (u_p1, 'zz-p1@check.invalid'), (u_p2, 'zz-p2@check.invalid'),
+    (u_out, 'zz-out@check.invalid'), (u_b,  'zz-b@check.invalid');
+  insert into public.trips (id, expedition_id, code, staff_code, starts, name) values
+    ('zz-check-a', 'zz-a', 'zz check a', 'zz check a staff', '2030-01-01', 'Check A'),
+    ('zz-check-b', 'zz-b', 'ZZ-CHECK-B', 'ZZ-CHECK-B-STAFF', '2030-02-01', 'Check B');
+  if ((select code from public.trips where id = 'zz-check-a') = 'ZZ-CHECK-A') is not true then raise exception 'Check failed: %', 'codes get tidied'; end if;
+
+  -- Signed-in stranger: no trips, no people, no messages.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform 1 from public.trips; ok := false;
+  exception when insufficient_privilege then ok := true;
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'a stranger cannot read the trips table'; end if;
+  if (public.my_trip() is null) is not true then raise exception 'Check failed: %', 'a stranger has no trip'; end if;
+  if (public.find_trip_code('nope-nope') is null) is not true then raise exception 'Check failed: %', 'a wrong code finds nothing'; end if;
+
+  -- Codes.
+  j := public.find_trip_code('zz-check-a');
+  if (j->>'role' = 'participant') is not true then raise exception 'Check failed: %', 'participant code is recognized'; end if;
+  if (j::text not like '%STAFF%') is not true then raise exception 'Check failed: %', 'looking up a participant code never shows the staff code'; end if;
+  j := public.find_trip_code(' zz check a staff ');
+  if (j->>'role' = 'staff') is not true then raise exception 'Check failed: %', 'staff code is recognized (spacing and case ignored)'; end if;
+
+  -- Joining.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  m_vf := public.join_trip('ZZ-CHECK-A-STAFF', 'Sam Okafor', 'WG''27', 'vf', 'https://calendly.com/sam');
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  m_p1 := public.join_trip('ZZ-CHECK-A', 'Maya R.', 'C''28', 'vf', null, '{"bag":{"id":"x"}}');
+  if ((select role from public.trip_members('zz-check-a') where id = m_p1) = 'participant') is not true then raise exception 'Check failed: %', 'a participant code can''t make you staff'; end if;
+  if (public.join_trip('ZZ-CHECK-A', 'Maya again') = m_p1) is not true then raise exception 'Check failed: %', 'joining twice keeps one profile'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  m_p2 := public.join_trip('ZZ-CHECK-A', 'Ben Carter', '', null, null, '{"bag":{"id":"y"}}');
+  perform set_config('request.jwt.claims', json_build_object('sub', u_b)::text, true), set_config('role', 'authenticated', true);
+  m_b := public.join_trip('ZZ-CHECK-B', 'Other Trip');
+  if (public.join_trip('WRONG-CODE', 'X') is null) is not true then raise exception 'Check failed: %', 'joining with a wrong code does nothing'; end if;
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  if ((select count(*) from public.code_attempts where user_id = u_b) = 1) is not true then raise exception 'Check failed: %', 'a wrong code when joining counts toward the limit'; end if;
+
+  -- What a participant sees.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  j := public.my_trip();
+  if (j->'trip'->>'code' = 'ZZ-CHECK-A' and j->'trip'->>'staffCode' is null) is not true then raise exception 'Check failed: %', 'participants see their trip code but not the staff code'; end if;
+  select count(*) into n from public.trip_members('zz-check-a');
+  if (n = 3) is not true then raise exception 'Check failed: %', 'participants see the whole crew'; end if;
+  if ((select gear from public.trip_members('zz-check-a') where id = m_p2) is null) is not true then raise exception 'Check failed: %', 'participants can''t see each other''s gear'; end if;
+  if ((select gear from public.trip_members('zz-check-a') where id = m_p1) ? 'bag') is not true then raise exception 'Check failed: %', 'participants see their own gear'; end if;
+  if ((select booking_url from public.trip_members('zz-check-a') where id = m_vf) = 'https://calendly.com/sam') is not true then raise exception 'Check failed: %', 'participants see staff booking links'; end if;
+  select count(*) into n from public.trip_members('zz-check-b');
+  if (n = 0) is not true then raise exception 'Check failed: %', 'participants can''t see another trip''s crew'; end if;
+  select count(*) into n from public.members;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'reading the members table directly shows only yourself'; end if;
+
+  -- What a participant can change.
+  update public.members set name = 'Maya Rao', role = 'vf',
+    review = '{"status":"verified","note":"self-approved"}' where id = m_p1;
+  if ((select name from public.members where id = m_p1) = 'Maya Rao') is not true then raise exception 'Check failed: %', 'you can rename yourself'; end if;
+  if ((select role from public.members where id = m_p1) = 'participant') is not true then raise exception 'Check failed: %', 'you can''t make yourself staff'; end if;
+  if ((select review from public.members where id = m_p1) is null) is not true then raise exception 'Check failed: %', 'you can''t verify your own gear'; end if;
+  update public.members set name = 'Hacked' where id = m_p2;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'you can''t change someone else'; end if;
+
+  -- Staff.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  j := public.my_trip();
+  if (j->'trip'->>'staffCode' = 'ZZ-CHECK-A-STAFF') is not true then raise exception 'Check failed: %', 'staff see the staff code'; end if;
+  if ((select gear from public.trip_members('zz-check-a') where id = m_p2) ? 'bag') is not true then raise exception 'Check failed: %', 'staff see participants'' gear'; end if;
+  update public.members set name = 'Renamed by staff',
+    review = '{"status":"verified","note":"Looks good","byName":"Someone Else","gearSig":"abc"}' where id = m_p1;
+  if ((select name from public.members where id = m_p1) = 'Maya Rao') is not true then raise exception 'Check failed: %', 'staff can''t rename participants'; end if;
+  if ((select review->>'status' from public.members where id = m_p1) = 'verified') is not true then raise exception 'Check failed: %', 'staff can verify gear'; end if;
+  if ((select review->>'byName' from public.members where id = m_p1) = 'Sam Okafor') is not true then raise exception 'Check failed: %', 'the check is signed with the real staff name'; end if;
+  update public.members set review = '{"status":"verified"}' where id = m_b;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'staff can''t check gear on another trip'; end if;
+
+  -- Messages.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  insert into public.messages (trip_id, author_id, author_name, author_role, text)
+    values ('zz-check-a', m_p1, 'Fake Name', 'vf', 'Hi crew');
+  if ((select author_name from public.messages where trip_id = 'zz-check-a' and thread is null) = 'Maya Rao') is not true then raise exception 'Check failed: %', 'message names come from the server'; end if;
+  insert into public.messages (trip_id, author_id, author_name, author_role, thread, text)
+    values ('zz-check-a', m_p1, '', '', m_p1, 'Is my bag warm enough?');
+  begin
+    insert into public.messages (trip_id, author_id, author_name, author_role, thread, text)
+      values ('zz-check-a', m_p1, '', '', m_p2, 'Snooping'); ok := false;
+  exception when insufficient_privilege then ok := true;
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'you can''t post in someone else''s private thread'; end if;
+  begin
+    insert into public.messages (trip_id, author_id, author_name, author_role, text)
+      values ('zz-check-a', m_vf, '', '', 'Pretending to be staff'); ok := false;
+  exception when insufficient_privilege then ok := true;
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'you can''t post as someone else'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  select count(*) into n from public.messages;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'other participants see the board post but not the private thread'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  select count(*) into n from public.messages where thread = m_p1;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'staff see private threads'; end if;
+  insert into public.messages (trip_id, author_id, author_name, author_role, thread, text)
+    values ('zz-check-a', m_vf, '', '', m_p1, 'Borderline. Let''s talk at your 1-1.');
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_b)::text, true), set_config('role', 'authenticated', true);
+  select count(*) into n from public.messages;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'another trip sees none of these messages'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
+  select count(*) into n from public.messages;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'a stranger sees no messages'; end if;
+
+  -- Code guessing is limited.
+  for i in 1..10 loop perform public.find_trip_code('guess-' || i); end loop;
+  if (public.find_trip_code('ZZ-CHECK-A')->>'error' = 'too_many') is not true then raise exception 'Check failed: %', 'too many wrong codes locks guessing'; end if;
+
+  -- Clean up.
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  delete from public.trips where id in ('zz-check-a', 'zz-check-b');
+  delete from auth.users where id in (u_vf, u_p1, u_p2, u_out, u_b);
+end $$;
+
+select 'All checks passed' as result;
