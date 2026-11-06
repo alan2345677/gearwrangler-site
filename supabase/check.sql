@@ -1,5 +1,5 @@
 -- =====================================================================
--- Gear Wrangler: check the My trip rules.
+-- Handbook: check the "Log into your expedition" rules.
 --
 -- Run this after setup.sql: paste it into a NEW query in the SQL Editor and click Run.
 -- It makes up a few people and two trips, tries everything they should and
@@ -257,6 +257,52 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
   j := public.my_trip();
   if (j->'trip'->>'id' = 'zz-check-a' and j->'trip'->>'code' = 'ZZ-CHECK-A-NEW1') is not true then raise exception 'Check failed: %', 'people stay on a trip when its code changes, and see the new code'; end if;
+
+  -- Flights: your own, staff see all, crew only if you share.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  update public.members set travel_shared = false, travel =
+    '{"arrive":{"flight":" LA 533 ","airport":"PMC","date":"2030-01-01","time":"09:40","seat":"12A"},"depart":{"date":"soon"},"junk":1}'
+    where id = m_p1;
+  j := (select travel from public.trip_members('zz-check-a') where id = m_p1);
+  if (j->'arrive'->>'flight' = 'LA 533' and j->'arrive'->>'time' = '09:40') is not true then raise exception 'Check failed: %', 'you see your own flights'; end if;
+  if (j->'arrive' ? 'seat' or j ? 'junk' or j ? 'depart') is not false then raise exception 'Check failed: %', 'flights keep only the expected fields'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  if ((select travel from public.trip_members('zz-check-a') where id = m_p1) is null) is not true then raise exception 'Check failed: %', 'the crew can''t see flights you haven''t shared'; end if;
+  update public.members set travel = '{"arrive":{"flight":"X"}}' where id = m_p1;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'you can''t change someone else''s flights'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  if ((select travel->'arrive'->>'flight' from public.trip_members('zz-check-a') where id = m_p1) = 'LA 533') is not true then raise exception 'Check failed: %', 'staff see everyone''s flights'; end if;
+  update public.members set travel = '{"arrive":{"flight":"STAFF EDIT"}}', travel_shared = true where id = m_p1;
+  if ((select travel->'arrive'->>'flight' from public.trip_members('zz-check-a') where id = m_p1) = 'LA 533'
+      and (select travel_shared from public.trip_members('zz-check-a') where id = m_p1) = false) is not true then raise exception 'Check failed: %', 'staff can''t change someone''s flights or sharing'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  update public.members set travel_shared = true where id = m_p1;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  if ((select travel->'arrive'->>'flight' from public.trip_members('zz-check-a') where id = m_p1) = 'LA 533') is not true then raise exception 'Check failed: %', 'the crew sees flights you share'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_b)::text, true), set_config('role', 'authenticated', true);
+  select count(*) into n from public.trip_members('zz-check-a');
+  if (n = 0) is not true then raise exception 'Check failed: %', 'another trip sees none of these flights'; end if;
+
+  -- Trip info: staff of that trip only, signed with their real name.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.set_trip_info('zz-check-a', '{"notes":"hi"}'); ok := false;
+  exception when others then ok := sqlerrm like '%staff%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'participants can''t change trip info'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  j := public.set_trip_info('zz-check-a', '{"meetPlace":"  PMC arrivals  ","notes":"Bring snacks","byName":"Fake","extra":"x"}');
+  if (j->>'meetPlace' = 'PMC arrivals' and j->>'byName' = 'Sam Okafor' and not j ? 'extra') is not true then raise exception 'Check failed: %', 'trip info is tidied and signed with the real staff name'; end if;
+  begin
+    perform public.set_trip_info('zz-check-b', '{"notes":"x"}'); ok := false;
+  exception when others then ok := sqlerrm like '%staff%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'staff can''t change another trip''s info'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  if (public.my_trip()->'trip'->'info'->>'notes' = 'Bring snacks') is not true then raise exception 'Check failed: %', 'participants see their trip info'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
+  if (public.find_trip_code('ZZ-CHECK-A-NEW1')->'trip' ? 'info') is not false then raise exception 'Check failed: %', 'looking up a code doesn''t show trip info'; end if;
 
   -- Code guessing is limited.
   for i in 1..10 loop perform public.find_trip_code('guess-' || i); end loop;

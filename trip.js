@@ -104,6 +104,19 @@ const DemoTripData = (() => {
       person('m-sofia', 'Sofia L.', "E'27", '2026-10-30T14:00:00Z')
     ];
 
+    // Flights. Shared ones show to the crew; Ben's are private, so only staff see them.
+    const fly = (who, shared, arrive, depart) => { const m = members[P].find(x => x.id === who); m.travel = { arrive, depart }; m.travelShared = shared; };
+    fly('m-sam', true, { flight:'LATAM 287', airport:'PMC', date:'2026-12-27', time:'14:10' }, { flight:'LATAM 290', airport:'PMC', date:'2027-01-05', time:'17:45' });
+    fly('m-maya', true, { flight:'LATAM 287', airport:'PMC', date:'2026-12-27', time:'14:10' }, { flight:'LATAM 290', airport:'PMC', date:'2027-01-05', time:'17:45' });
+    fly('m-ben', false, { flight:'Sky 101', airport:'PMC', date:'2026-12-28', time:'08:30' }, {});
+    fly('m-hannah', true, { flight:'LATAM 285', airport:'PMC', date:'2026-12-28', time:'09:55' }, { flight:'LATAM 292', airport:'PMC', date:'2027-01-06', time:'07:20' });
+    fly('m-leo', true, { flight:'LATAM 285', airport:'PMC', date:'2026-12-28', time:'09:55' }, {});
+    const info = {};
+    info[P] = { meetPlace:'Puerto Montt airport (PMC), outside arrivals', meetTime:'Dec 28 by 11:00 AM',
+      airport:'Puerto Montt (PMC)', departAfter:'Jan 5 after 4:00 PM',
+      notes:'We drive about 5 hours to the trailhead, with a lunch stop.\nBring your passport and a printed copy of your travel insurance.',
+      byName:'Sam Okafor', at:'2026-11-01T15:00:00Z' };
+
     const msg = (id, at, author, text, thread) => ({ id, at, authorId:author.id, authorName:author.name, authorRole:author.role, text, thread:thread || null });
     const [sam, priya, jordan] = members[P];
     const ben2 = members[P][4], hannah = members[P][7], leo = members[P][6];
@@ -120,7 +133,7 @@ const DemoTripData = (() => {
     messages[A] = [
       msg('y1', '2026-10-29T15:00:00Z', tess, 'Hi all! Nights in the desert get cold. Add your gear by Feb 1 and we’ll take a look.')
     ];
-    return { members, messages };
+    return { members, messages, info };
   }
 
   let db = null;
@@ -137,7 +150,8 @@ const DemoTripData = (() => {
     try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){ /* storage unavailable: keep it in memory */ }
   }
   function tripView(t, role){
-    const view = { id:t.id, expeditionId:t.expeditionId, code:t.code, starts:t.starts, fallback:t.fallback };
+    const view = { id:t.id, expeditionId:t.expeditionId, code:t.code, starts:t.starts, fallback:t.fallback,
+      info:(data().info || {})[t.id] || null };
     if(role === 'staff') view.staffCode = t.staffCode;
     return view;
   }
@@ -186,6 +200,15 @@ const DemoTripData = (() => {
       list('messages', tripId).push(clone(message));
       save();
     },
+    async setTripInfo(tripId, info, byName){
+      const d = data();
+      d.info = d.info || {};
+      const clean = {};
+      Object.keys(info).forEach(k => { if(info[k]) clean[k] = info[k]; });
+      d.info[tripId] = Object.keys(clean).length ? Object.assign(clean, { byName, at:new Date().toISOString() }) : null;
+      save();
+      return clone(d.info[tripId]);
+    },
     reset(){
       db = null;
       try{ localStorage.removeItem(KEY); }catch(e){}
@@ -217,7 +240,7 @@ const LiveTripData = (() => {
   // Database rows, in the shape the screens expect.
   const memberOf = r => ({ id:r.id, name:r.name, about:r.about || '', role:r.role, bookingUrl:r.booking_url || '',
     gear:r.gear || {}, gearUpdatedAt:r.gear_updated_at || null, review:r.review || null,
-    oneOnOne:r.one_on_one || null, joinedAt:r.joined_at });
+    oneOnOne:r.one_on_one || null, joinedAt:r.joined_at, travel:r.travel || null, travelShared:!!r.travel_shared });
   const messageOf = r => ({ id:r.id, at:r.at, authorId:r.author_id, authorName:r.author_name,
     authorRole:r.author_role, text:r.text, thread:r.thread });
 
@@ -263,8 +286,13 @@ const LiveTripData = (() => {
       await run(sb().from('members').update({
         name:m.name, about:m.about || '', role:m.role, booking_url:m.bookingUrl || null,
         gear:m.gear || {}, gear_updated_at:m.gearUpdatedAt || null,
-        one_on_one:m.oneOnOne || null, review:m.review || null
+        one_on_one:m.oneOnOne || null, review:m.review || null,
+        travel:m.travel || null, travel_shared:!!m.travelShared
       }).eq('id', m.id));
+    },
+    // Staff only; the database signs it with their name (set_trip_info in setup.sql).
+    async setTripInfo(tripId, info){
+      return run(sb().rpc('set_trip_info', { p_trip:tripId, p_info:info }));
     },
     async listMessages(tripId){
       return (await run(sb().from('messages').select('*').eq('trip_id', tripId).order('at'))).map(messageOf);
@@ -306,7 +334,7 @@ const TripData = TRIP_CONFIG.supabaseUrl && TRIP_CONFIG.supabaseAnonKey ? LiveTr
 const MyTrip = (() => {
   const SESSION_KEY = 'gearwrangler_tripSession';
   const ROLE_LABEL = { participant:'Participant', vf:'Venture Fellow', guide:'Guide' };
-  const VIEWS = ['home', 'gear', 'crew', 'messages', 'oneonone'];
+  const VIEWS = ['home', 'info', 'gear', 'travel', 'crew', 'messages', 'oneonone'];
 
   // Destination photos, matched to a trip by a word in its id. All from Wikimedia Commons.
   const PHOTOS = [
@@ -333,7 +361,7 @@ const MyTrip = (() => {
   function freshState(){
     return { step:'code', view:'home', trip:null, role:null, code:null, me:null, members:[], messages:[],
       error:'', notice:'', msgTab:'board', thread:null, open:null, editing:false, loaded:false,
-      checked:false, user:null, authMode:'signin', email:'', busy:false,
+      checked:false, user:null, authMode:'signin', email:'', busy:false, travelEdit:false, infoEdit:false,
       admin:false, adminTrips:[], adminEdit:null, adminDraft:null, admins:[], adminError:'' };
   }
 
@@ -383,6 +411,12 @@ const MyTrip = (() => {
     s.members = await TripData.listMembers(s.trip.id);
     s.messages = (await TripData.listMessages(s.trip.id)).sort((a, b) => a.at.localeCompare(b.at));
     s.me = s.members.find(m => m.id === id) || null;
+  }
+
+  // The trip itself (its trip info can change while you're here). Live only.
+  async function refreshTrip(){
+    const found = await TripData.myMembership(readSession());
+    if(found && s.trip && found.trip.id === s.trip.id) s.trip = found.trip;
   }
 
   // ---------- Small helpers ----------
@@ -490,13 +524,13 @@ const MyTrip = (() => {
   function go(view){
     s.view = view;
     s.notice = '';
-    s.editing = false;
+    s.editing = false; s.travelEdit = false; s.infoEdit = false; s.error = '';
     render();
     const tabs = document.querySelector('.trip-tabs');
     if(tabs && view !== 'home') tabs.scrollIntoView({ block:'start' });
     else window.scrollTo({ top:0 });
     // Pick up what others have posted or changed since.
-    if(!TripData.isDemo && s.step === 'in') refresh().then(render).catch(e => console.error(e));
+    if(!TripData.isDemo && s.step === 'in') Promise.all([refresh(), refreshTrip()]).then(render).catch(e => console.error(e));
   }
   function render(){
     const el = document.getElementById('tripContent');
@@ -642,7 +676,8 @@ const MyTrip = (() => {
     const photo = photoFor(exp);
     const big = s.view === 'home';
     const staff = isStaff(s.me);
-    const tabs = [['home', 'Home'], ['gear', staff ? 'Gear check' : 'My gear'], ['crew', 'Crew'], ['messages', 'Messages'], ['oneonone', '1-1']];
+    const tabs = [['home', 'Home'], ['info', 'Trip info'], ['gear', staff ? 'Gear check' : 'My gear'], ['travel', 'Travel'],
+      ['crew', 'Crew'], ['messages', 'Messages'], ['oneonone', '1-1']];
     let countdown = '';
     if(big && s.trip.starts){
       const d = daysUntil(s.trip.starts);
@@ -683,6 +718,8 @@ const MyTrip = (() => {
     if(!expeditionList && !expeditionLoadFailed && s.view === 'gear') return `<p class="subtext">Loading…</p>`;
     switch(s.view){
       case 'gear': return staff ? staffGearHtml() : myGearHtml();
+      case 'info': return infoHtml(staff);
+      case 'travel': return travelHtml(staff);
       case 'crew': return crewHtml();
       case 'messages': return messagesHtml(staff);
       case 'oneonone': return staff ? staffOneOnOneHtml() : oneOnOneHtml();
@@ -716,6 +753,7 @@ const MyTrip = (() => {
       ${task(check && check.met === check.total, 'Get your gear ready', gearSub, 'gear')}
       ${task(review.key === 'ok', 'Gear check by staff', reviewSub, 'gear')}
       ${task(!!one, 'Book your 1-1', one ? `With ${esc(one.withName)}, ${esc(stamp(one.when))}.` : 'Pick a time with a Venture Fellow.', 'oneonone')}
+      ${flightTask(me)}
       <div class="section-label">Trip board</div>
       ${latest ? `<div class="task-card" onclick="MyTrip.go('messages')"><div class="task-body">
           <div class="task-sub">${esc(latest.authorName)} · ${esc(stamp(latest.at))}</div>
@@ -733,6 +771,7 @@ const MyTrip = (() => {
     const booked = people.filter(m => m.oneOnOne).length;
     const waiting = people.filter(m => awaitingReply(m.id));
     const noGear = people.filter(m => !Object.keys(m.gear || {}).length);
+    const noFlights = people.filter(m => !m.travel || legEmpty(m.travel.arrive));
     return `<h2 class="trip-h2" tabindex="-1">Welcome, ${esc(s.me.name.split(' ')[0])}.</h2>
       <div class="stat-grid">
         <div class="stat-tile" onclick="MyTrip.go('gear')"><div class="num">${verified}<span class="of"> / ${people.length}</span></div><div class="lbl">Gear verified</div></div>
@@ -741,6 +780,7 @@ const MyTrip = (() => {
       ${look.length ? `<div class="section-label">Gear to check</div>` + look.map(m => personLine(m, chip(reviewState(m)), `MyTrip.openMember('${m.id}')`)).join('') : ''}
       ${waiting.length ? `<div class="section-label">Waiting for a reply</div>` + waiting.map(m => personLine(m, `<span class="chip wait">${esc(stamp(lastThreadMessage(m.id).at))}</span>`, `MyTrip.openThread('${m.id}')`)).join('') : ''}
       ${noGear.length ? `<div class="section-label">No gear added yet</div><p class="fine-print">${esc(noGear.map(m => m.name).join(', '))}</p>` : ''}
+      ${noFlights.length ? `<div class="section-label">No flights added yet</div><p class="fine-print">${esc(noFlights.map(m => m.name).join(', '))}. <span class="text-link" onclick="MyTrip.go('travel')">See travel</span></p>` : ''}
       <div class="section-label">Invite your crew</div>
       <div class="code-box">
         <div><div class="code-label">Participant code</div><div class="code-value">${esc(s.trip.code)}</div></div>
@@ -902,6 +942,184 @@ const MyTrip = (() => {
     html += people.map(({ m, last }) => personLine(m,
       last ? (last.authorRole === 'participant' ? `<span class="chip warn">Needs reply</span>` : `<span class="chip wait">${esc(stamp(last.at))}</span>`) : `<span class="chip wait">Start</span>`,
       `MyTrip.openThread('${m.id}')`)).join('');
+    return html;
+  }
+
+  // ---------- Trip info ----------
+  const RAIN_TEXT = { casual:'Some rain possible', regular:'Expect steady rain', sustained:'Rain most days' };
+  const TERRAIN_TEXT = { light:'Maintained trails', backpacking:'Backpacking trails', offtrail:'Rough and off-trail' };
+  const INFO_FIELDS = [
+    ['meetPlace', 'Where to meet', 'Puerto Montt airport, outside arrivals', 200],
+    ['meetTime', 'When to be there', 'Dec 28 by 11:00 AM', 100],
+    ['airport', 'Fly into', 'Puerto Montt (PMC)', 120],
+    ['departAfter', 'Book flights home after', 'Jan 5 after 4:00 PM', 100]
+  ];
+  function isoDay(iso){ const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+  function tripEnd(exp){ return (s.trip.fallback && s.trip.fallback.endsBy) || exp.endsBy || null; }
+  function datesText(exp){
+    const end = tripEnd(exp);
+    return s.trip.starts ? dayText(s.trip.starts) + (end ? ' – ' + dayText(end) : '') : (exp.when || '');
+  }
+  function lengthText(exp){
+    const end = tripEnd(exp);
+    if(s.trip.starts && end){
+      const days = Math.round((isoDay(end) - isoDay(s.trip.starts)) / 86400000) + 1;
+      if(days >= 1) return `${days} day${days === 1 ? '' : 's'}, ${days - 1} night${days - 1 === 1 ? '' : 's'}`;
+    }
+    const nights = exp.gearNeeds && exp.gearNeeds.tripLengthNights;
+    return nights ? `${nights} nights` : '';
+  }
+  function factRows(rows){
+    return `<dl class="facts">` + rows.filter(r => r[1]).map(([label, value]) =>
+      `<div class="fact"><dt>${esc(label)}</dt><dd>${value}</dd></div>`).join('') + `</dl>`;
+  }
+  function infoHtml(staff){
+    const exp = expedition();
+    const needs = exp.gearNeeds || {};
+    const cost = exp.cost == null ? '' : exp.cost === 0 ? 'Free' : '$' + Number(exp.cost).toLocaleString('en-US');
+    const url = exp.url ? safeUrl(exp.url) : null;
+    const traits = (exp.traits || []).map(k => TRIP_TRAITS[k]).filter(Boolean);
+    let html = `<h2 class="trip-h2" tabindex="-1">Trip info.</h2>`;
+    html += factRows([
+      ['Dates', esc(datesText(exp))],
+      ['Length', esc(lengthText(exp))],
+      ['Where', esc(exp.location || '')],
+      ['Activities', esc((exp.focus || []).join(', '))],
+      ['Setting', esc((exp.settings || []).map(k => TRIP_SETTINGS[k]).filter(Boolean).join(', '))],
+      ['Coldest night', needs.coldestTempF != null ? `About ${esc(needs.coldestTempF)}°F` : ''],
+      ['Rain', esc(RAIN_TEXT[needs.rainLikelihood] || '')],
+      ['Terrain', esc(TERRAIN_TEXT[needs.terrain] || '')],
+      ['Expect', esc(traits.join(', '))],
+      ['Cost', esc(cost)],
+      ['Program page', url ? `<a class="text-link" href="${esc(url)}" target="_blank" rel="noopener">Wharton's page ↗</a>` : '']
+    ]);
+    if(needs.coldestTempF != null || needs.rainLikelihood) html += `<p class="fine-print">Weather and terrain are our estimates. Your staff and Wharton have the final word.</p>`;
+
+    const info = s.trip.info;
+    html += `<div class="section-label">From your staff</div>`;
+    if(staff && s.infoEdit){
+      html += `<div class="edit-card">` + INFO_FIELDS.map(([key, label, ph, max]) =>
+          `<label class="plan-label" for="info-${key}">${esc(label)}</label>
+          <input id="info-${key}" class="search-box" maxlength="${max}" placeholder="${esc(ph)}" value="${esc((info && info[key]) || '')}">`).join('') +
+        `<label class="plan-label" for="info-notes">Notes for the crew</label>
+        <textarea id="info-notes" class="trip-textarea" maxlength="2000" placeholder="Transfers, what to bring on day one, visas…">${esc((info && info.notes) || '')}</textarea>
+        <p class="fine-print">Everyone on this trip sees this.</p>
+        ${s.error ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
+        <div class="button-row"><button class="btn small" onclick="MyTrip.saveInfo()">Save</button>
+        <button class="btn secondary small" onclick="MyTrip.cancelInfo()">Cancel</button></div></div>`;
+      return html;
+    }
+    if(info){
+      html += factRows(INFO_FIELDS.map(([key, label]) => [label, esc(info[key] || '')]));
+      if(info.notes) html += `<p class="info-notes">${esc(info.notes)}</p>`;
+      html += `<p class="fine-print">Updated by ${esc(info.byName || 'staff')}${info.at ? ', ' + esc(stamp(info.at)) : ''}.</p>`;
+    } else {
+      html += `<p class="fine-print">${staff ? 'Add where and when to meet, the airport to fly into, and anything else your crew should know.'
+        : 'Your staff will add where and when to meet, and which airport to fly into.'}</p>`;
+    }
+    if(staff) html += `<button class="btn secondary small" style="margin-top:12px;" onclick="MyTrip.editInfo()">${info ? 'Edit' : 'Add details'}</button>`;
+    return html;
+  }
+
+  // ---------- Travel ----------
+  const legEmpty = l => !l || !(l.flight || l.airport || l.date || l.time);
+  function timeText(hhmm){
+    if(!hhmm) return '';
+    const [h, m] = hhmm.split(':').map(Number);
+    return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+  }
+  function shortDay(iso){
+    return iso ? isoDay(iso).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) : '';
+  }
+  function legText(l){
+    return [l.date ? shortDay(l.date) : '', timeText(l.time), l.flight, l.airport].filter(Boolean).join(' · ');
+  }
+  function flightTask(me){
+    const t = me.travel || {};
+    const arrive = !legEmpty(t.arrive), depart = !legEmpty(t.depart);
+    const sub = arrive && depart ? `Landing ${esc(legText(t.arrive))}.`
+      : arrive ? 'Add your flight home too.'
+      : 'So staff know when you land, and crew can share rides.';
+    return task(arrive && depart, 'Add your flights', sub, 'travel');
+  }
+  function legFields(prefix, title, leg, placeholderAirport){
+    leg = leg || {};
+    return `<div class="leg-title">${title}</div>
+      <div class="field-grid">
+        <div><label class="plan-label" for="${prefix}Flight">Flight</label>
+          <input id="${prefix}Flight" class="search-box" maxlength="40" placeholder="LATAM 287" value="${esc(leg.flight || '')}"></div>
+        <div><label class="plan-label" for="${prefix}Airport">Airport</label>
+          <input id="${prefix}Airport" class="search-box" maxlength="60" placeholder="${esc(placeholderAirport || 'PMC')}" value="${esc(leg.airport || '')}"></div>
+        <div><label class="plan-label" for="${prefix}Date">Date</label>
+          <input id="${prefix}Date" class="search-box" type="date" value="${esc(leg.date || '')}"></div>
+        <div><label class="plan-label" for="${prefix}Time">Time <span class="optional">(local)</span></label>
+          <input id="${prefix}Time" class="search-box" type="time" value="${esc(leg.time || '')}"></div>
+      </div>`;
+  }
+  function travelRow(m, leg, staff){
+    const me = s.me;
+    return `<div class="person">
+      <span class="avatar${isStaff(m) ? ' staff' : ''}" aria-hidden="true">${esc(initials(m.name))}</span>
+      <div class="person-body"><div class="person-name">${esc(m.name)}${m.id === me.id ? ' <span class="you">(you)</span>' : ''}</div>
+      <div class="person-sub">${esc([timeText(leg.time), leg.flight, leg.airport].filter(Boolean).join(' · ') || 'No details yet')}</div></div>
+      ${staff && !m.travelShared ? `<span class="chip wait">Staff only</span>` : ''}</div>`;
+  }
+  // Everyone's arrivals or departures, by day, then time.
+  function legListHtml(kind, people, staff){
+    const rows = people.filter(m => m.travel && !legEmpty(m.travel[kind]))
+      .map(m => ({ m, leg:m.travel[kind] }))
+      .sort((a, b) => ((a.leg.date || '9999') + (a.leg.time || '99')).localeCompare((b.leg.date || '9999') + (b.leg.time || '99')) || a.m.name.localeCompare(b.m.name));
+    if(!rows.length) return `<p class="fine-print">None yet.</p>`;
+    let html = '', day = null;
+    rows.forEach(({ m, leg }) => {
+      const d = leg.date || '';
+      if(d !== day){ day = d; html += `<div class="day-label">${esc(d ? shortDay(d) : 'Date not added')}</div>`; }
+      html += travelRow(m, leg, staff);
+    });
+    return html;
+  }
+  function travelHtml(staff){
+    const me = s.me;
+    const info = s.trip.info || {};
+    const mine = me.travel || {};
+    const hasMine = !legEmpty(mine.arrive) || !legEmpty(mine.depart);
+    let html = `<h2 class="trip-h2" tabindex="-1">Travel.</h2>
+      <p class="subtext">Add your flights so staff know when you land, and crew can share rides.</p>`;
+    if(info.airport || info.departAfter || info.meetTime){
+      html += `<div class="review-card"><div class="review-head"><strong>From your staff</strong></div>` +
+        factRows([['Fly into', esc(info.airport || '')], ['Be there by', esc(info.meetTime || '')], ['Fly home after', esc(info.departAfter || '')]]) + `</div>`;
+    }
+    html += `<div class="section-label">Your flights</div>`;
+    if(s.travelEdit || !hasMine){
+      html += `<div class="edit-card">
+        ${legFields('arr', 'Arriving', mine.arrive, info.airport)}
+        ${legFields('dep', 'Flying home', mine.depart, info.airport)}
+        <label class="share-row"><input type="checkbox" id="travelShare"${me.travelShared ? ' checked' : ''}>
+          <span>Show my flights to my crew<span class="fine-print share-sub">Staff on this trip always see them.</span></span></label>
+        ${s.error ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
+        <div class="button-row"><button class="btn small" onclick="MyTrip.saveTravel()">Save flights</button>
+        ${hasMine ? `<button class="btn secondary small" onclick="MyTrip.cancelTravel()">Cancel</button>` : ''}</div></div>`;
+    } else {
+      html += `<div class="edit-card">` + factRows([
+          ['Arriving', esc(legEmpty(mine.arrive) ? 'Not added yet' : legText(mine.arrive))],
+          ['Flying home', esc(legEmpty(mine.depart) ? 'Not added yet' : legText(mine.depart))]]) +
+        `<p class="fine-print">${me.travelShared ? 'Your crew and staff can see these.' : 'Only staff can see these.'}
+        <span class="text-link" onclick="MyTrip.editTravel()">Edit</span></p></div>`;
+    }
+    // Staff see everyone. Participants see themselves plus anyone who shares (the database
+    // already leaves out flights that aren't shared with them).
+    const people = staff ? s.members : s.members.filter(m => m.id === me.id || (m.travelShared && m.travel));
+    html += `<div class="section-label">Arrivals</div>` + legListHtml('arrive', people, staff);
+    html += `<div class="section-label">Flights home</div>` + legListHtml('depart', people, staff);
+    if(staff){
+      const none = s.members.filter(m => !m.travel || (legEmpty(m.travel.arrive) && legEmpty(m.travel.depart)));
+      if(none.length) html += `<div class="section-label">No flights yet · ${none.length}</div><p class="fine-print">${esc(none.map(m => m.name).join(', '))}</p>`;
+      html += `<button class="btn secondary small" style="margin-top:18px;" onclick="MyTrip.copyTravel()">Copy for a spreadsheet</button>
+        <p class="fine-print">Copies everyone's flights, including private ones. Paste into Google Sheets or Excel.</p>`;
+    } else {
+      const hidden = s.members.filter(m => m.id !== me.id && !(m.travelShared && m.travel)).length;
+      if(hidden) html += `<p class="fine-print" style="margin-top:18px;">${hidden} ${hidden === 1 ? 'person hasn’t' : 'people haven’t'} shared flights. Staff can see everyone's.</p>`;
+    }
     return html;
   }
 
@@ -1478,6 +1696,60 @@ const MyTrip = (() => {
     s.notice = link ? 'Booking link saved.' : 'Booking link removed.';
     render();
   }
+  function editInfo(){ s.infoEdit = true; s.error = ''; render(); const el = document.getElementById('info-meetPlace'); if(el) el.focus(); }
+  function cancelInfo(){ s.infoEdit = false; s.error = ''; render(); }
+  async function saveInfo(){
+    if(s.busy) return;
+    const info = {};
+    INFO_FIELDS.forEach(([key]) => { info[key] = val('info-' + key); });
+    info.notes = val('info-notes');
+    s.busy = true;
+    try{ s.trip.info = await TripData.setTripInfo(s.trip.id, info, s.me.name); }
+    finally{ s.busy = false; }
+    s.infoEdit = false; s.error = '';
+    s.notice = 'Trip info saved. Everyone on the trip can see it.';
+    render();
+    window.scrollTo({ top:0 });
+  }
+  function editTravel(){ s.travelEdit = true; s.error = ''; render(); const el = document.getElementById('arrFlight'); if(el) el.focus(); }
+  function cancelTravel(){ s.travelEdit = false; s.error = ''; render(); }
+  async function saveTravel(){
+    if(s.busy) return;
+    const leg = p => {
+      const l = { flight:val(p + 'Flight'), airport:val(p + 'Airport'), date:val(p + 'Date'), time:val(p + 'Time') };
+      Object.keys(l).forEach(k => { if(!l[k]) delete l[k]; });
+      return l;
+    };
+    const travel = { arrive:leg('arr'), depart:leg('dep') };
+    if(legEmpty(travel.arrive) && legEmpty(travel.depart)){ s.error = 'Add at least one flight.'; render(); return; }
+    if(travel.arrive.date && travel.depart.date && travel.depart.date < travel.arrive.date){ s.error = 'Your flight home is before you arrive.'; render(); return; }
+    const box = document.getElementById('travelShare');
+    s.me.travel = travel;
+    s.me.travelShared = !!(box && box.checked);
+    s.busy = true;
+    try{ await TripData.saveMember(s.trip.id, s.me); }
+    finally{ s.busy = false; }
+    await refresh();
+    s.travelEdit = false; s.error = '';
+    s.notice = s.me.travelShared ? 'Flights saved. Your crew and staff can see them.' : 'Flights saved. Only staff can see them.';
+    render();
+    window.scrollTo({ top:0 });
+  }
+  // Tab-separated, so it pastes into a spreadsheet as columns.
+  function copyTravel(){
+    const cell = v => String(v || '').replace(/[\t\r\n]+/g, ' ');
+    const legCells = l => { l = l || {}; return [l.date, timeText(l.time), l.flight, l.airport]; };
+    const lines = [['Name', 'Role', 'Arrive date', 'Arrive time', 'Arrive flight', 'Arrive airport',
+      'Home date', 'Home time', 'Home flight', 'Home airport', 'Shared with crew']];
+    s.members.forEach(m => {
+      const t = m.travel || {};
+      lines.push([m.name, ROLE_LABEL[m.role], ...legCells(t.arrive), ...legCells(t.depart), m.travelShared ? 'Yes' : 'No']);
+    });
+    const text = lines.map(row => row.map(cell).join('\t')).join('\n');
+    const finish = ok => { s.notice = ok ? 'Copied. Paste it into a spreadsheet.' : "Couldn't copy here. Try another browser."; render(); window.scrollTo({ top:0 }); };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => finish(true), () => finish(false));
+    else finish(false);
+  }
   function copy(text, done){
     const finish = ok => { s.notice = ok ? esc(done) : `Copy this: ${esc(text)}`; render(); };
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => finish(true), () => finish(false));
@@ -1575,6 +1847,7 @@ const MyTrip = (() => {
     toggle, openMember, review:guard(review), msgTab, openThread, post:guard(post), demoBooking,
     saveBooking:guard(saveBooking), clearBooking:guard(clearBooking), saveBookingLink:guard(saveBookingLink),
     copy, gearChanged, dataReady, refreshLinks, tabHtml, hasSession,
+    editInfo, cancelInfo, saveInfo:guard(saveInfo), editTravel, cancelTravel, saveTravel:guard(saveTravel), copyTravel,
     openAdmin:guard(openAdmin), leaveAdmin:guard(leaveAdmin), joinWithCode, adminEdit, adminCancel,
     adminPickExpedition, adminNameChanged, adminNewCode, adminSave:guard(adminSave), readDraft,
     adminAdd, adminRemove };
