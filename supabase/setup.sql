@@ -18,6 +18,14 @@
 --     the crew sees yours only if you choose to share them.
 --   - Only a trip's own staff can change its trip info, and the edit is signed with their name.
 --   - You can edit or delete your own messages, and nobody else's. Edits are marked as edited.
+--   - Super admins can join any trip as "WLV admin" (with staff powers) and leave it again.
+--     They show up in that trip's crew list. Removing someone as an admin takes them off
+--     every trip they joined this way.
+--   - Managing people: super admins on a trip can remove anyone, edit their name and "about",
+--     change their role (participant, Venture Fellow, guide), and delete any message.
+--     A trip's Venture Fellows can do the same, but only to participants and guides.
+--     Nobody can do this to themselves, and nobody can make someone an admin this way.
+--     Someone who is removed can rejoin with the code (starting fresh).
 --   - A private thread is visible only to that participant and the trip's staff.
 --   - Only staff can verify gear, and only on their own trip.
 --   - 10 wrong codes in an hour locks that account out of code guessing for the hour.
@@ -95,6 +103,10 @@ alter table public.members add column if not exists travel jsonb
   check (travel is null or pg_column_size(travel) < 3000);
 alter table public.members add column if not exists travel_shared boolean not null default false;
 alter table public.messages add column if not exists edited_at timestamptz;
+-- Added Nov 2026: 'admin' is a super admin who joined from Manage trips.
+alter table public.members drop constraint if exists members_role_check;
+alter table public.members add constraint members_role_check
+  check (role in ('participant', 'vf', 'guide', 'admin'));
 
 alter table public.trips         enable row level security;
 alter table public.members       enable row level security;
@@ -136,7 +148,7 @@ $$;
 create or replace function public.is_staff(p_trip text) returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (select 1 from public.members m
-                 where m.trip_id = p_trip and m.user_id = auth.uid() and m.role in ('vf', 'guide'))
+                 where m.trip_id = p_trip and m.user_id = auth.uid() and m.role in ('vf', 'guide', 'admin'))
 $$;
 
 -- A trip as the website expects it. Codes are included only for the right people.
@@ -227,8 +239,10 @@ begin
   return mid;
 end $$;
 
--- The trip you most recently joined, or nothing.
-create or replace function public.my_trip() returns jsonb
+-- One of your trips: p_trip if you're on it, otherwise the one you most recently joined.
+-- (Dropped first because it gained the p_trip input in Nov 2026.)
+drop function if exists public.my_trip();
+create or replace function public.my_trip(p_trip text default null) returns jsonb
 language sql stable security definer set search_path = '' as $$
   select jsonb_build_object(
     'memberId', m.id,
@@ -236,8 +250,19 @@ language sql stable security definer set search_path = '' as $$
     'trip', public.trip_json(t, case when m.role = 'participant' then 'participant' else 'staff' end))
   from public.members m join public.trips t on t.id = m.trip_id
   where m.user_id = auth.uid()
-  order by m.joined_at desc
+  order by (m.trip_id is not distinct from p_trip) desc, m.joined_at desc
   limit 1
+$$;
+
+-- Every trip you're on, for switching between them.
+create or replace function public.my_trips() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'memberId', m.id, 'memberRole', m.role,
+      'trip', public.trip_json(t, null) || jsonb_build_object('ends', t.ends))
+    order by t.starts nulls last, t.created_at), '[]'::jsonb)
+  from public.members m join public.trips t on t.id = m.trip_id
+  where m.user_id = auth.uid()
 $$;
 
 -- Everyone on your trip. Staff see everything; participants see names and roles,
@@ -294,7 +319,7 @@ declare
 begin
   if auth.uid() is null then raise exception 'Sign in first.'; end if;
   select * into me from public.members m
-    where m.trip_id = p_trip and m.user_id = auth.uid() and m.role in ('vf', 'guide');
+    where m.trip_id = p_trip and m.user_id = auth.uid() and m.role in ('vf', 'guide', 'admin');
   if me.id is null then raise exception 'Only this trip''s staff can do that.'; end if;
   clean := jsonb_strip_nulls(jsonb_build_object(
     'meetPlace',   nullif(left(trim(coalesce(p_info->>'meetPlace', '')), 200), ''),
@@ -355,7 +380,9 @@ begin
       'starts', t.starts, 'ends', t.ends, 'createdAt', t.created_at,
       'fallback', jsonb_strip_nulls(jsonb_build_object('name', t.name, 'location', t.location, 'when', t.dates, 'endsBy', t.ends)),
       'participants', (select count(*) from public.members m where m.trip_id = t.id and m.role = 'participant'),
-      'staff', (select count(*) from public.members m where m.trip_id = t.id and m.role <> 'participant')
+      'staff', (select count(*) from public.members m where m.trip_id = t.id and m.role in ('vf', 'guide')),
+      'joined', exists (select 1 from public.members m where m.trip_id = t.id and m.user_id = auth.uid()),
+      'joinedAs', (select m.role from public.members m where m.trip_id = t.id and m.user_id = auth.uid())
     ) order by t.starts nulls last, t.created_at)
     from public.trips t), '[]'::jsonb);
 end $$;
@@ -454,7 +481,117 @@ begin
   perform public.admin_only();
   if p_user = auth.uid() then raise exception 'You can''t remove yourself. Ask another admin.'; end if;
   delete from public.admins where user_id = p_user;
+  delete from public.members where user_id = p_user and role = 'admin';  -- off the trips they joined as admin
   return public.admin_list_admins();
+end $$;
+
+
+-- Join a trip as "WLV admin", with staff powers. If you're already on it, nothing changes.
+create or replace function public.admin_join_trip(p_trip text, p_name text) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare
+  nm text := left(trim(coalesce(p_name, '')), 40);
+  mid uuid;
+begin
+  perform public.admin_only();
+  if nm = '' then raise exception 'Add your name, as crews will see it.'; end if;
+  if not exists (select 1 from public.trips where id = p_trip) then raise exception 'That trip no longer exists.'; end if;
+  select m.id into mid from public.members m where m.trip_id = p_trip and m.user_id = auth.uid();
+  if mid is not null then return mid; end if;
+  insert into public.members (trip_id, user_id, name, role) values (p_trip, auth.uid(), nm, 'admin')
+  returning id into mid;
+  return mid;
+end $$;
+
+-- Join every trip that hasn't ended. Returns how many you joined.
+create or replace function public.admin_join_all(p_name text) returns int
+language plpgsql security definer set search_path = '' as $$
+declare
+  t record;
+  n int := 0;
+begin
+  perform public.admin_only();
+  if trim(coalesce(p_name, '')) = '' then raise exception 'Add your name, as crews will see it.'; end if;
+  for t in select tr.id from public.trips tr
+           where (tr.ends is null or tr.ends >= current_date)
+             and not exists (select 1 from public.members m where m.trip_id = tr.id and m.user_id = auth.uid())
+  loop
+    perform public.admin_join_trip(t.id, p_name);
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+-- Leave a trip you joined as "WLV admin". Your messages stay, under your name.
+create or replace function public.admin_leave_trip(p_trip text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  delete from public.members where trip_id = p_trip and user_id = auth.uid() and role = 'admin';
+  if not found then raise exception 'You''re not on that trip as an admin.'; end if;
+end $$;
+
+
+-- ---------- Managing people on a trip ----------
+
+-- True if you may manage someone with this role on this trip: super admins on the trip can
+-- manage anyone; the trip's Venture Fellows can manage participants and guides.
+create or replace function public.can_manage(p_trip text, p_target_role text) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select public.my_member_id(p_trip) is not null and (
+    public.is_admin()
+    or (p_target_role in ('participant', 'guide') and exists (
+          select 1 from public.members m where m.trip_id = p_trip and m.user_id = auth.uid() and m.role = 'vf')))
+$$;
+
+-- The person you're about to manage, after checking you may.
+create or replace function public.manage_target(p_member uuid) returns public.members
+language plpgsql stable security definer set search_path = '' as $$
+declare tgt public.members;
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  select * into tgt from public.members where id = p_member;
+  if tgt.id is null then raise exception 'That person is no longer on this trip.'; end if;
+  if tgt.user_id = auth.uid() then raise exception 'You can''t do that to yourself.'; end if;
+  if not public.can_manage(tgt.trip_id, tgt.role) then raise exception 'You can''t manage that person.'; end if;
+  return tgt;
+end $$;
+
+-- Remove someone from a trip. Their gear, flights, 1-1, and private thread go with them;
+-- their trip-board posts stay under their name. They can rejoin with the code.
+create or replace function public.manage_remove_member(p_member uuid) returns void
+language plpgsql security definer set search_path = '' as $$
+declare tgt public.members;
+begin
+  tgt := public.manage_target(p_member);
+  delete from public.members where id = tgt.id;
+end $$;
+
+-- Change someone's name, "about", or role. Leave a field empty (null) to keep it.
+create or replace function public.manage_update_member(
+  p_member uuid, p_name text default null, p_about text default null, p_role text default null
+) returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  tgt public.members;
+  new_role text;
+begin
+  tgt := public.manage_target(p_member);
+  if p_name is not null and trim(p_name) = '' then raise exception 'Add a name.'; end if;
+  new_role := coalesce(p_role, tgt.role);
+  if new_role <> tgt.role then
+    if tgt.role = 'admin' then raise exception 'WLV admins keep their role.'; end if;
+    if new_role not in ('participant', 'vf', 'guide') then raise exception 'Pick participant, Venture Fellow, or guide.'; end if;
+  end if;
+  -- Lets members_guard (below) allow this one change, for this one person, in this transaction.
+  perform set_config('app.manage_member', tgt.id::text, true);
+  update public.members set
+    name  = case when p_name is null then name else left(trim(p_name), 40) end,
+    about = case when p_about is null then about else left(trim(p_about), 80) end,
+    role  = new_role,
+    booking_url = case when new_role = 'participant' then null else booking_url end
+  where id = tgt.id;
+  perform set_config('app.manage_member', '', true);
 end $$;
 
 
@@ -470,12 +607,15 @@ declare
   incoming jsonb := new.review;
 begin
   if auth.uid() is null then return new; end if;
+  -- A change made by manage_update_member, which already checked who may do it.
+  if current_setting('app.manage_member', true) = old.id::text then return new; end if;
 
   new.id := old.id; new.trip_id := old.trip_id; new.user_id := old.user_id; new.joined_at := old.joined_at;
 
   if old.user_id = auth.uid() then
     new.review := old.review;
     if old.role = 'participant' then new.role := 'participant';
+    elsif old.role = 'admin' then new.role := 'admin';
     elsif new.role not in ('vf', 'guide') then new.role := old.role;
     end if;
     if new.role = 'participant' then new.booking_url := null; end if;
@@ -486,7 +626,7 @@ begin
   end if;
 
   select * into me from public.members m
-    where m.trip_id = old.trip_id and m.user_id = auth.uid() and m.role in ('vf', 'guide');
+    where m.trip_id = old.trip_id and m.user_id = auth.uid() and m.role in ('vf', 'guide', 'admin');
   if me.id is null or old.role <> 'participant' then
     raise exception 'Only this trip''s staff can do that.';
   end if;
@@ -528,9 +668,14 @@ create trigger messages_fill before insert on public.messages
 
 -- Editing a message: only the text changes, and it's marked as edited.
 create or replace function public.messages_edit() returns trigger
-language plpgsql set search_path = '' as $$
+language plpgsql security definer set search_path = '' as $$
 begin
   if auth.uid() is null then return new; end if;
+  -- The author left or was removed: the database unlinks their posts, which stay under their name.
+  if new.author_id is null and old.author_id is not null
+     and not exists (select 1 from public.members m where m.id = old.author_id) then
+    return new;
+  end if;
   new.id := old.id; new.trip_id := old.trip_id; new.author_id := old.author_id;
   new.author_name := old.author_name; new.author_role := old.author_role;
   new.thread := old.thread; new.at := old.at;
@@ -578,7 +723,8 @@ create policy messages_update on public.messages for update to authenticated
 
 drop policy if exists messages_delete on public.messages;
 create policy messages_delete on public.messages for delete to authenticated
-  using (author_id is not null and author_id = public.my_member_id(trip_id));
+  using ((author_id is not null and author_id = public.my_member_id(trip_id))
+         or public.can_manage(trip_id, author_role));
 
 -- Table access: nothing for signed-out visitors. Signed-in people go through the rules above.
 revoke all on public.trips, public.members, public.messages, public.code_attempts, public.admins from anon, authenticated;
@@ -590,7 +736,10 @@ grant update (text) on public.messages to authenticated;  -- the text only
 revoke execute on function
   public.normal_code(text), public.trips_tidy(), public.my_member_id(text), public.is_staff(text),
   public.trip_json(public.trips, text), public.code_tries_left(), public.find_trip_code(text),
-  public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text),
+  public.join_trip(text, text, text, text, text, jsonb), public.my_trip(text), public.my_trips(), public.trip_members(text),
+  public.admin_join_trip(text, text), public.admin_join_all(text), public.admin_leave_trip(text),
+  public.can_manage(text, text), public.manage_target(uuid), public.manage_remove_member(uuid),
+  public.manage_update_member(uuid, text, text, text),
   public.members_guard(), public.messages_fill(), public.messages_edit(),
   public.clean_leg(jsonb), public.clean_travel(jsonb), public.set_trip_info(text, jsonb),
   public.is_admin(), public.admin_only(), public.check_new_codes(text, text, text), public.admin_trips(),
@@ -600,8 +749,10 @@ revoke execute on function
   from public, anon, authenticated;
 grant execute on function
   public.my_member_id(text), public.is_staff(text), public.find_trip_code(text),
-  public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text),
+  public.join_trip(text, text, text, text, text, jsonb), public.my_trip(text), public.my_trips(), public.trip_members(text),
   public.set_trip_info(text, jsonb),
+  public.admin_join_trip(text, text), public.admin_join_all(text), public.admin_leave_trip(text),
+  public.can_manage(text, text), public.manage_remove_member(uuid), public.manage_update_member(uuid, text, text, text),
   public.is_admin(), public.admin_trips(),
   public.admin_add_trip(text, text, text, date, date, text, text, text),
   public.admin_update_trip(text, text, text, date, date, text, text, text),

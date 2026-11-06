@@ -17,7 +17,8 @@ declare
   u_out uuid := gen_random_uuid();
   u_b   uuid := gen_random_uuid();
   u_adm uuid := gen_random_uuid();
-  m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid;
+  u_g   uuid := gen_random_uuid();
+  m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid; m_adm uuid; m_g uuid; m_adm_a uuid; m_p2_new uuid;
   j jsonb; n int; ok boolean; i int; msg_id uuid;
 begin
   -- Setup, as the dashboard would.
@@ -334,6 +335,138 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
   if (public.find_trip_code('ZZ-CHECK-A-NEW1')->'trip' ? 'info') is not false then raise exception 'Check failed: %', 'looking up a code doesn''t show trip info'; end if;
 
+  -- Admins joining trips as "WLV admin".
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_join_trip('zz-check-b', 'Not An Admin'); ok := false;
+  exception when others then ok := sqlerrm like '%super admins%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'only admins can join trips from Manage trips'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  m_adm := public.admin_join_trip('zz-check-b', 'Wes Admin');
+  if ((select role from public.trip_members('zz-check-b') where id = m_adm) = 'admin') is not true then raise exception 'Check failed: %', 'an admin joins as WLV admin'; end if;
+  if (public.admin_join_trip('zz-check-b', 'Again') = m_adm) is not true then raise exception 'Check failed: %', 'joining twice keeps one profile'; end if;
+  if ((select gear from public.trip_members('zz-check-b') where id = m_b) is not null) is not true then raise exception 'Check failed: %', 'an admin on a trip sees what staff see'; end if;
+  if (public.set_trip_info('zz-check-b', '{"notes":"From WLV"}')->>'byName' = 'Wes Admin') is not true then raise exception 'Check failed: %', 'an admin on a trip can edit its trip info'; end if;
+  update public.members set role = 'vf' where id = m_adm;
+  if ((select role from public.trip_members('zz-check-b') where id = m_adm) = 'admin') is not true then raise exception 'Check failed: %', 'an admin can''t change their own role'; end if;
+  if (((select x from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-b')->>'staff')::int = 0) is not true then raise exception 'Check failed: %', 'admins aren''t counted as trip staff'; end if;
+  if (((select x from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-b')->>'joined')::boolean) is not true then raise exception 'Check failed: %', 'Manage trips shows which trips you''ve joined'; end if;
+  if ((select x from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-b')->>'joinedAs' = 'admin') is not true then raise exception 'Check failed: %', 'Manage trips shows how you joined'; end if;
+  n := public.admin_join_all('Wes Admin');
+  if (exists (select 1 from jsonb_array_elements(public.my_trips()) x where x->'trip'->>'id' = 'zz-check-a')) is not true then raise exception 'Check failed: %', 'join all adds current trips'; end if;
+  if (public.my_trip('zz-check-b')->'trip'->>'id' = 'zz-check-b' and public.my_trip('zz-check-a')->'trip'->>'id' = 'zz-check-a') is not true then raise exception 'Check failed: %', 'you can open any trip you''re on'; end if;
+  if (public.my_trip('not-a-trip-of-mine') is not null) is not true then raise exception 'Check failed: %', 'opening a trip you''re not on falls back to one you are on'; end if;
+  perform public.admin_leave_trip('zz-check-b');
+  if (not exists (select 1 from jsonb_array_elements(public.my_trips()) x where x->'trip'->>'id' = 'zz-check-b')) is not true then raise exception 'Check failed: %', 'an admin can leave a trip'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_leave_trip('zz-check-a'); ok := false;
+  exception when others then ok := sqlerrm like '%admin%';
+  end;
+  if (ok and (select count(*) from public.trip_members('zz-check-a') where id = m_p1) = 1) is not true then raise exception 'Check failed: %', 'only admin memberships can be left this way'; end if;
+  if ((select count(*) from jsonb_array_elements(public.my_trips())) = 1) is not true then raise exception 'Check failed: %', 'my trips lists only your own'; end if;
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  insert into public.admins (user_id, added_by) values (u_vf, u_adm) on conflict do nothing;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  perform public.admin_join_trip('zz-check-b', 'Sam as admin');
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  perform public.admin_remove_admin(u_vf);
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  if ((select count(*) from public.members where user_id = u_vf and role = 'admin') = 0 and (select count(*) from public.members where user_id = u_vf) = 1) is not true then raise exception 'Check failed: %', 'removing an admin takes them off trips they joined as admin, and nothing else'; end if;
+
+  -- Managing people: super admins on the trip manage anyone; VFs manage participants and guides.
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  insert into auth.users (id, email) values (u_g, 'zz-g@check.invalid');
+  insert into public.members (trip_id, user_id, name, role) values ('zz-check-a', u_g, 'Gia Guide', 'guide') returning id into m_g;
+  select id into m_adm_a from public.members where trip_id = 'zz-check-a' and user_id = u_adm;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.manage_remove_member(m_p1); ok := false;
+  exception when others then ok := sqlerrm like '%can''t manage%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'participants can''t remove people'; end if;
+  begin
+    perform public.manage_update_member(m_p1, 'Renamed'); ok := false;
+  exception when others then ok := sqlerrm like '%can''t manage%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'participants can''t rename people'; end if;
+  insert into public.messages (trip_id, author_id, author_name, author_role, text) values ('zz-check-a', m_p2, '', '', 'Off-topic post');
+  perform set_config('request.jwt.claims', json_build_object('sub', u_b)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.manage_remove_member(m_p1); ok := false;
+  exception when others then ok := sqlerrm like '%can''t manage%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'someone from another trip can''t remove people'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  perform public.manage_update_member(m_p2, '  Ben C.  ', 'Fixed about', null);
+  if ((select name from public.trip_members('zz-check-a') where id = m_p2) = 'Ben C.' and (select about from public.trip_members('zz-check-a') where id = m_p2) = 'Fixed about') is not true then raise exception 'Check failed: %', 'VFs can fix a participant''s name and about'; end if;
+  perform public.manage_update_member(m_p2, null, null, 'guide');
+  if ((select role from public.trip_members('zz-check-a') where id = m_p2) = 'guide') is not true then raise exception 'Check failed: %', 'VFs can change a participant''s role'; end if;
+  perform public.manage_update_member(m_p2, null, null, 'participant');
+  if ((select role from public.trip_members('zz-check-a') where id = m_p2) = 'participant') is not true then raise exception 'Check failed: %', 'VFs can change it back'; end if;
+  begin
+    perform public.manage_update_member(m_vf, 'Me'); ok := false;
+  exception when others then ok := sqlerrm like '%yourself%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'nobody can manage themselves'; end if;
+  begin
+    perform public.manage_update_member(m_adm_a, 'Not admin'); ok := false;
+  exception when others then ok := sqlerrm like '%can''t manage%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'VFs can''t manage WLV admins'; end if;
+  begin
+    perform public.manage_update_member(m_p2, null, null, 'admin'); ok := false;
+  exception when others then ok := sqlerrm like '%Pick participant%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'nobody can make someone an admin'; end if;
+  update public.members set name = 'Sneaky' where id = m_p2;
+  if ((select name from public.trip_members('zz-check-a') where id = m_p2) = 'Ben C.') is not true then raise exception 'Check failed: %', 'renaming still has to go through the checked route'; end if;
+  delete from public.messages where trip_id = 'zz-check-a' and text = 'Off-topic post';
+  get diagnostics n = row_count;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'VFs can delete a participant''s message'; end if;
+  perform public.manage_remove_member(m_g);
+  if (not exists (select 1 from public.trip_members('zz-check-a') where id = m_g)) is not true then raise exception 'Check failed: %', 'VFs can remove a guide'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  insert into public.messages (trip_id, author_id, author_name, author_role, text) values ('zz-check-a', m_adm_a, '', '', 'Admin note');
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  delete from public.messages where trip_id = 'zz-check-a' and text = 'Admin note';
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'VFs can''t delete an admin''s message'; end if;
+  begin
+    perform public.manage_remove_member(m_adm_a); ok := false;
+  exception when others then ok := sqlerrm like '%can''t manage%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'VFs can''t remove a WLV admin'; end if;
+  insert into public.messages (trip_id, author_id, author_name, author_role, text) values ('zz-check-a', m_vf, '', '', 'VF post');
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  delete from public.messages where trip_id = 'zz-check-a' and text = 'VF post';
+  get diagnostics n = row_count;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'admins can delete a VF''s message'; end if;
+  perform public.manage_update_member(m_vf, null, null, 'guide');
+  if ((select role from public.trip_members('zz-check-a') where id = m_vf) = 'guide') is not true then raise exception 'Check failed: %', 'admins can change a VF''s role'; end if;
+  perform public.manage_update_member(m_vf, null, null, 'vf');
+  perform public.manage_remove_member(m_p1);
+  if (not exists (select 1 from public.trip_members('zz-check-a') where id = m_p1)) is not true then raise exception 'Check failed: %', 'admins can remove a participant'; end if;
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  if ((select count(*) from public.messages where thread = m_p1) = 0) is not true then raise exception 'Check failed: %', 'removing someone deletes their private thread'; end if;
+  if (exists (select 1 from public.messages where trip_id = 'zz-check-a' and thread is null and author_name = 'Maya Rao' and author_id is null)) is not true then raise exception 'Check failed: %', 'their board posts stay under their name'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  if (public.my_trip() is null) is not true then raise exception 'Check failed: %', 'a removed person loses access to the trip'; end if;
+  m_p2_new := public.join_trip('ZZ-CHECK-A-NEW1', 'Maya again');
+  if (m_p2_new is not null and (select gear from public.trip_members('zz-check-a') where id = m_p2_new) = '{}'::jsonb) is not true then raise exception 'Check failed: %', 'a removed person can rejoin, starting fresh'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.manage_remove_member(m_adm_a); ok := false;
+  exception when others then ok := sqlerrm like '%yourself%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'admins can''t remove themselves this way'; end if;
+  perform public.admin_leave_trip('zz-check-a');
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  if (exists (select 1 from public.messages where trip_id = 'zz-check-a' and text = 'Admin note' and author_id is null)) is not true then raise exception 'Check failed: %', 'an admin who posted can still leave, and the post stays'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
+
   -- Code guessing is limited.
   for i in 1..10 loop perform public.find_trip_code('guess-' || i); end loop;
   if (public.find_trip_code('ZZ-CHECK-A')->>'error' = 'too_many') is not true then raise exception 'Check failed: %', 'too many wrong codes locks guessing'; end if;
@@ -341,7 +474,7 @@ begin
   -- Clean up.
   perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
   delete from public.trips where id in ('zz-check-a', 'zz-check-b', 'zz-new-2030', 'zz-new-2030-2', 'custom-zz-custom-trek-2030');
-  delete from auth.users where id in (u_vf, u_p1, u_p2, u_out, u_b, u_adm);
+  delete from auth.users where id in (u_vf, u_p1, u_p2, u_out, u_b, u_adm, u_g);
 end $$;
 
 select 'All checks passed' as result;
