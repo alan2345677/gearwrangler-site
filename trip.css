@@ -219,3 +219,26 @@ body.trip-mode .topbar, body.trip-mode .site-footer{ display:none; }
   .trip-hero.big h1{ font-size:32px; }
   .join-card h1.question{ font-size:23px; }
 }
+
+/* Trip info and Travel */
+.facts{ margin:4px 0 0; }
+.fact{ display:grid; grid-template-columns:132px 1fr; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
+.fact dt{ color:var(--ink-soft); font-weight:600; font-size:13px; }
+.fact dd{ margin:0; }
+.review-card .facts .fact:last-child, .edit-card .facts .fact:last-child{ border-bottom:none; }
+.info-notes{ white-space:pre-line; font-size:14px; line-height:1.55; margin:14px 0 0; }
+.leg-title{ font-family:'Archivo',sans-serif; font-weight:700; font-size:15px; margin:6px 0 2px; }
+.leg-title ~ .leg-title{ margin-top:18px; }
+.field-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+.field-grid .search-box{ width:100%; box-sizing:border-box; }
+.share-row{ display:flex; gap:10px; align-items:flex-start; margin:18px 0 4px; font-size:14px; font-weight:600; cursor:pointer; }
+.share-row input{ width:20px; height:20px; margin:1px 0 0; flex-shrink:0; accent-color:var(--ink); }
+.share-sub{ display:block; font-weight:400; margin-top:2px; }
+.day-label{ font-size:13px; font-weight:700; margin:16px 0 0; }
+@media(max-width:420px){ .fact{ grid-template-columns:110px 1fr; } }
+
+/* Edit and delete on your own messages */
+.msg-actions{ display:flex; gap:14px; margin-top:4px; }
+.link-btn-plain{ background:none; border:none; padding:4px 0; font:inherit; font-size:12.5px; color:var(--ink-soft); text-decoration:underline; cursor:pointer; min-height:28px; }
+.link-btn-plain:hover{ color:var(--ink); }
+.msg-body .trip-textarea{ margin-top:6px; }

@@ -1,5 +1,5 @@
 -- =====================================================================
--- Gear Wrangler: check the My trip rules.
+-- Handbook: check the "Log into your expedition" rules.
 --
 -- Run this after setup.sql: paste it into a NEW query in the SQL Editor and click Run.
 -- It makes up a few people and two trips, tries everything they should and
@@ -18,7 +18,7 @@ declare
   u_b   uuid := gen_random_uuid();
   u_adm uuid := gen_random_uuid();
   m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid;
-  j jsonb; n int; ok boolean; i int;
+  j jsonb; n int; ok boolean; i int; msg_id uuid;
 begin
   -- Setup, as the dashboard would.
   insert into auth.users (id, email) values
@@ -137,6 +137,35 @@ begin
   select count(*) into n from public.messages;
   if (n = 0) is not true then raise exception 'Check failed: %', 'a stranger sees no messages'; end if;
 
+  -- Editing and deleting messages: your own only.
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  select id into msg_id from public.messages where trip_id = 'zz-check-a' and thread is null and author_id = m_p1;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  update public.messages set text = 'Edited by someone else' where id = msg_id;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'you can''t edit someone else''s message'; end if;
+  delete from public.messages where id = msg_id;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'you can''t delete someone else''s message'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  update public.messages set text = 'Edited by staff' where id = msg_id;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'staff can''t edit a participant''s message'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    update public.messages set author_name = 'Someone else' where id = msg_id; ok := false;
+  exception when insufficient_privilege then ok := true;
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'editing can change only the text'; end if;
+  update public.messages set text = 'Hi crew!' where id = msg_id;
+  if ((select text = 'Hi crew!' and edited_at is not null and author_name = 'Maya Rao' and thread is null
+       from public.messages where id = msg_id)) is not true then raise exception 'Check failed: %', 'you can edit your own message, and it''s marked edited'; end if;
+  delete from public.messages where trip_id = 'zz-check-a' and thread = m_p1 and author_id = m_p1;
+  get diagnostics n = row_count;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'you can delete your own message'; end if;
+  select count(*) into n from public.messages where thread = m_p1;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'deleting yours leaves staff replies in place'; end if;
+
   -- Super admins.
   perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
   insert into public.admins (user_id) values (u_adm);
@@ -221,7 +250,8 @@ begin
   end;
   if (ok) is not true then raise exception 'Check failed: %', 'adding an admin needs an existing account'; end if;
   j := public.admin_add_admin(' ZZ-VF@Check.Invalid ');
-  if (jsonb_array_length(j) = 2) is not true then raise exception 'Check failed: %', 'admins can add an admin by email (any case)'; end if;
+  -- (Looks for the made-up person rather than counting, since real admins may exist too.)
+  if (exists (select 1 from jsonb_array_elements(j) x where (x->>'userId')::uuid = u_vf)) is not true then raise exception 'Check failed: %', 'admins can add an admin by email (any case)'; end if;
   begin
     perform public.admin_remove_admin(u_adm); ok := false;
   exception when others then ok := sqlerrm like '%yourself%';
@@ -246,7 +276,7 @@ begin
 
   perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
   j := public.admin_remove_admin(u_vf);
-  if (jsonb_array_length(j) = 1) is not true then raise exception 'Check failed: %', 'admins can remove another admin'; end if;
+  if (not exists (select 1 from jsonb_array_elements(j) x where (x->>'userId')::uuid = u_vf)) is not true then raise exception 'Check failed: %', 'admins can remove another admin'; end if;
   perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
   if (public.is_admin()) is not false then raise exception 'Check failed: %', 'a removed admin is no longer an admin'; end if;
 
@@ -257,6 +287,52 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
   j := public.my_trip();
   if (j->'trip'->>'id' = 'zz-check-a' and j->'trip'->>'code' = 'ZZ-CHECK-A-NEW1') is not true then raise exception 'Check failed: %', 'people stay on a trip when its code changes, and see the new code'; end if;
+
+  -- Flights: your own, staff see all, crew only if you share.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  update public.members set travel_shared = false, travel =
+    '{"arrive":{"flight":" LA 533 ","airport":"PMC","date":"2030-01-01","time":"09:40","seat":"12A"},"depart":{"date":"soon"},"junk":1}'
+    where id = m_p1;
+  j := (select travel from public.trip_members('zz-check-a') where id = m_p1);
+  if (j->'arrive'->>'flight' = 'LA 533' and j->'arrive'->>'time' = '09:40') is not true then raise exception 'Check failed: %', 'you see your own flights'; end if;
+  if (j->'arrive' ? 'seat' or j ? 'junk' or j ? 'depart') is not false then raise exception 'Check failed: %', 'flights keep only the expected fields'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  if ((select travel from public.trip_members('zz-check-a') where id = m_p1) is null) is not true then raise exception 'Check failed: %', 'the crew can''t see flights you haven''t shared'; end if;
+  update public.members set travel = '{"arrive":{"flight":"X"}}' where id = m_p1;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'you can''t change someone else''s flights'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  if ((select travel->'arrive'->>'flight' from public.trip_members('zz-check-a') where id = m_p1) = 'LA 533') is not true then raise exception 'Check failed: %', 'staff see everyone''s flights'; end if;
+  update public.members set travel = '{"arrive":{"flight":"STAFF EDIT"}}', travel_shared = true where id = m_p1;
+  if ((select travel->'arrive'->>'flight' from public.trip_members('zz-check-a') where id = m_p1) = 'LA 533'
+      and (select travel_shared from public.trip_members('zz-check-a') where id = m_p1) = false) is not true then raise exception 'Check failed: %', 'staff can''t change someone''s flights or sharing'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  update public.members set travel_shared = true where id = m_p1;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  if ((select travel->'arrive'->>'flight' from public.trip_members('zz-check-a') where id = m_p1) = 'LA 533') is not true then raise exception 'Check failed: %', 'the crew sees flights you share'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_b)::text, true), set_config('role', 'authenticated', true);
+  select count(*) into n from public.trip_members('zz-check-a');
+  if (n = 0) is not true then raise exception 'Check failed: %', 'another trip sees none of these flights'; end if;
+
+  -- Trip info: staff of that trip only, signed with their real name.
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.set_trip_info('zz-check-a', '{"notes":"hi"}'); ok := false;
+  exception when others then ok := sqlerrm like '%staff%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'participants can''t change trip info'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  j := public.set_trip_info('zz-check-a', '{"meetPlace":"  PMC arrivals  ","notes":"Bring snacks","byName":"Fake","extra":"x"}');
+  if (j->>'meetPlace' = 'PMC arrivals' and j->>'byName' = 'Sam Okafor' and not j ? 'extra') is not true then raise exception 'Check failed: %', 'trip info is tidied and signed with the real staff name'; end if;
+  begin
+    perform public.set_trip_info('zz-check-b', '{"notes":"x"}'); ok := false;
+  exception when others then ok := sqlerrm like '%staff%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'staff can''t change another trip''s info'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  if (public.my_trip()->'trip'->'info'->>'notes' = 'Bring snacks') is not true then raise exception 'Check failed: %', 'participants see their trip info'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
+  if (public.find_trip_code('ZZ-CHECK-A-NEW1')->'trip' ? 'info') is not false then raise exception 'Check failed: %', 'looking up a code doesn''t show trip info'; end if;
 
   -- Code guessing is limited.
   for i in 1..10 loop perform public.find_trip_code('guess-' || i); end loop;

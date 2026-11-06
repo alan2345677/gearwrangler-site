@@ -1,18 +1,23 @@
 -- =====================================================================
--- Gear Wrangler: the My trip database.
+-- Handbook: the database behind "Log into your expedition".
 --
 -- Paste ALL of this into Supabase > SQL Editor > New query, then click Run.
 -- Safe to run again later: it updates the rules and leaves your data alone.
 --
 -- What it sets up:
---   trips      one row per expedition, with its participant code and staff code
---   members    one row per person per trip (name, role, gear, staff check, 1-1)
+--   trips      one row per expedition, with its participant code, staff code, and the
+--              trip info its staff fill in (meeting point, airport, notes)
+--   members    one row per person per trip (name, role, gear, staff check, 1-1, flights)
 --   messages   the trip board, plus each participant's private thread with staff
 --
 -- The rules (enforced here, on the server, not in the website):
 --   - You only see a trip after entering its code.
 --   - Staff codes are checked here and never sent to participants.
 --   - Participants see their crew's names, not each other's gear or 1-1s.
+--   - Flights: you always see your own, and the trip's staff see everyone's. The rest of
+--     the crew sees yours only if you choose to share them.
+--   - Only a trip's own staff can change its trip info, and the edit is signed with their name.
+--   - You can edit or delete your own messages, and nobody else's. Edits are marked as edited.
 --   - A private thread is visible only to that participant and the trip's staff.
 --   - Only staff can verify gear, and only on their own trip.
 --   - 10 wrong codes in an hour locks that account out of code guessing for the hour.
@@ -83,6 +88,14 @@ create table if not exists public.admins (
   added_at timestamptz not null default now()
 );
 
+-- Added Nov 2026: trip info and flights. Leaves existing rows alone.
+alter table public.trips   add column if not exists info jsonb
+  check (info is null or pg_column_size(info) < 6000);
+alter table public.members add column if not exists travel jsonb
+  check (travel is null or pg_column_size(travel) < 3000);
+alter table public.members add column if not exists travel_shared boolean not null default false;
+alter table public.messages add column if not exists edited_at timestamptz;
+
 alter table public.trips         enable row level security;
 alter table public.members       enable row level security;
 alter table public.messages      enable row level security;
@@ -135,6 +148,7 @@ language sql stable set search_path = '' as $$
     'starts', t.starts,
     'code', case when p_role in ('participant', 'staff') then t.code end,
     'staffCode', case when p_role = 'staff' then t.staff_code end,
+    'info', case when p_role in ('participant', 'staff') then t.info end,
     'fallback', jsonb_strip_nulls(jsonb_build_object('name', t.name, 'location', t.location, 'when', t.dates, 'endsBy', t.ends))
   ))
 $$;
@@ -227,10 +241,13 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Everyone on your trip. Staff see everything; participants see names and roles,
--- plus their own gear, staff check, and 1-1.
-create or replace function public.trip_members(p_trip text)
+-- plus their own gear, staff check, and 1-1, and the flights of anyone who shares them.
+-- (Dropped first because the columns it returns changed in Nov 2026.)
+drop function if exists public.trip_members(text);
+create function public.trip_members(p_trip text)
 returns table (id uuid, name text, about text, role text, booking_url text, gear jsonb,
-               gear_updated_at timestamptz, review jsonb, one_on_one jsonb, joined_at timestamptz)
+               gear_updated_at timestamptz, review jsonb, one_on_one jsonb, joined_at timestamptz,
+               travel jsonb, travel_shared boolean)
 language sql stable security definer set search_path = '' as $$
   select m.id, m.name, m.about, m.role,
     case when m.role <> 'participant' then m.booking_url end,
@@ -238,12 +255,61 @@ language sql stable security definer set search_path = '' as $$
     case when x.full then m.gear_updated_at end,
     case when x.full then m.review end,
     case when x.full then m.one_on_one end,
-    m.joined_at
+    m.joined_at,
+    case when x.full or m.travel_shared then m.travel end,
+    m.travel_shared
   from public.members m
   cross join lateral (select (m.user_id = auth.uid() or public.is_staff(p_trip)) as full) x
   where m.trip_id = p_trip and public.my_member_id(p_trip) is not null
   order by m.joined_at
 $$;
+
+-- Flights, tidied: only the expected fields, short, and dates/times in a fixed format.
+-- A flight is { flight, airport, date 'YYYY-MM-DD', time 'HH:MM' } for arriving and for leaving.
+create or replace function public.clean_leg(l jsonb) returns jsonb
+language sql immutable set search_path = '' as $$
+  select nullif(jsonb_strip_nulls(jsonb_build_object(
+    'flight',  nullif(left(trim(coalesce(l->>'flight', '')), 40), ''),
+    'airport', nullif(left(trim(coalesce(l->>'airport', '')), 60), ''),
+    'date',    case when coalesce(l->>'date', '') ~ '^\d{4}-\d{2}-\d{2}$' then l->>'date' end,
+    'time',    case when coalesce(l->>'time', '') ~ '^\d{2}:\d{2}$' then l->>'time' end
+  )), '{}'::jsonb)
+$$;
+create or replace function public.clean_travel(t jsonb) returns jsonb
+language sql immutable set search_path = '' as $$
+  select nullif(jsonb_strip_nulls(jsonb_build_object(
+    'arrive', public.clean_leg(case when jsonb_typeof(t->'arrive') = 'object' then t->'arrive' end),
+    'depart', public.clean_leg(case when jsonb_typeof(t->'depart') = 'object' then t->'depart' end)
+  )), '{}'::jsonb)
+$$;
+
+-- Trip info, filled in by the trip's staff: where and when to meet, which airport to fly
+-- into, when to book flights home after, and notes. Saving empty fields clears them.
+-- Returns what was saved, signed with the staff member's name.
+create or replace function public.set_trip_info(p_trip text, p_info jsonb) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  me public.members;
+  clean jsonb;
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  select * into me from public.members m
+    where m.trip_id = p_trip and m.user_id = auth.uid() and m.role in ('vf', 'guide');
+  if me.id is null then raise exception 'Only this trip''s staff can do that.'; end if;
+  clean := jsonb_strip_nulls(jsonb_build_object(
+    'meetPlace',   nullif(left(trim(coalesce(p_info->>'meetPlace', '')), 200), ''),
+    'meetTime',    nullif(left(trim(coalesce(p_info->>'meetTime', '')), 100), ''),
+    'airport',     nullif(left(trim(coalesce(p_info->>'airport', '')), 120), ''),
+    'departAfter', nullif(left(trim(coalesce(p_info->>'departAfter', '')), 100), ''),
+    'notes',       nullif(left(trim(coalesce(p_info->>'notes', '')), 2000), '')));
+  if clean = '{}'::jsonb then
+    update public.trips set info = null where id = p_trip;
+    return null;
+  end if;
+  clean := clean || jsonb_build_object('byName', me.name, 'at', now());
+  update public.trips set info = clean where id = p_trip;
+  return clean;
+end $$;
 
 
 -- ---------- Super admins ----------
@@ -414,6 +480,8 @@ begin
     end if;
     if new.role = 'participant' then new.booking_url := null; end if;
     new.booking_url := nullif(trim(coalesce(new.booking_url, '')), '');
+    new.travel := public.clean_travel(new.travel);
+    new.travel_shared := coalesce(new.travel_shared, false);
     return new;
   end if;
 
@@ -458,6 +526,21 @@ drop trigger if exists messages_fill on public.messages;
 create trigger messages_fill before insert on public.messages
   for each row execute function public.messages_fill();
 
+-- Editing a message: only the text changes, and it's marked as edited.
+create or replace function public.messages_edit() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if auth.uid() is null then return new; end if;
+  new.id := old.id; new.trip_id := old.trip_id; new.author_id := old.author_id;
+  new.author_name := old.author_name; new.author_role := old.author_role;
+  new.thread := old.thread; new.at := old.at;
+  new.edited_at := case when new.text is distinct from old.text then now() else old.edited_at end;
+  return new;
+end $$;
+drop trigger if exists messages_edit on public.messages;
+create trigger messages_edit before update on public.messages
+  for each row execute function public.messages_edit();
+
 
 -- ---------- Who can read and write what ----------
 
@@ -487,17 +570,29 @@ create policy messages_insert on public.messages for insert to authenticated
             where p.id = thread and p.trip_id = messages.trip_id and p.role = 'participant'))
     ));
 
+-- Your own messages only.
+drop policy if exists messages_update on public.messages;
+create policy messages_update on public.messages for update to authenticated
+  using      (author_id is not null and author_id = public.my_member_id(trip_id))
+  with check (author_id is not null and author_id = public.my_member_id(trip_id));
+
+drop policy if exists messages_delete on public.messages;
+create policy messages_delete on public.messages for delete to authenticated
+  using (author_id is not null and author_id = public.my_member_id(trip_id));
+
 -- Table access: nothing for signed-out visitors. Signed-in people go through the rules above.
 revoke all on public.trips, public.members, public.messages, public.code_attempts, public.admins from anon, authenticated;
 grant select, update on public.members to authenticated;
-grant select, insert on public.messages to authenticated;
+grant select, insert, delete on public.messages to authenticated;
+grant update (text) on public.messages to authenticated;  -- the text only
 
 -- Function access.
 revoke execute on function
   public.normal_code(text), public.trips_tidy(), public.my_member_id(text), public.is_staff(text),
   public.trip_json(public.trips, text), public.code_tries_left(), public.find_trip_code(text),
   public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text),
-  public.members_guard(), public.messages_fill(),
+  public.members_guard(), public.messages_fill(), public.messages_edit(),
+  public.clean_leg(jsonb), public.clean_travel(jsonb), public.set_trip_info(text, jsonb),
   public.is_admin(), public.admin_only(), public.check_new_codes(text, text, text), public.admin_trips(),
   public.admin_add_trip(text, text, text, date, date, text, text, text),
   public.admin_update_trip(text, text, text, date, date, text, text, text),
@@ -506,6 +601,7 @@ revoke execute on function
 grant execute on function
   public.my_member_id(text), public.is_staff(text), public.find_trip_code(text),
   public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text),
+  public.set_trip_info(text, jsonb),
   public.is_admin(), public.admin_trips(),
   public.admin_add_trip(text, text, text, date, date, text, text, text),
   public.admin_update_trip(text, text, text, date, date, text, text, text),
