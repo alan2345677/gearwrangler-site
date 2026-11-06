@@ -17,7 +17,7 @@ declare
   u_out uuid := gen_random_uuid();
   u_b   uuid := gen_random_uuid();
   u_adm uuid := gen_random_uuid();
-  m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid;
+  m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid; m_adm uuid;
   j jsonb; n int; ok boolean; i int; msg_id uuid;
 begin
   -- Setup, as the dashboard would.
@@ -333,6 +333,47 @@ begin
   if (public.my_trip()->'trip'->'info'->>'notes' = 'Bring snacks') is not true then raise exception 'Check failed: %', 'participants see their trip info'; end if;
   perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
   if (public.find_trip_code('ZZ-CHECK-A-NEW1')->'trip' ? 'info') is not false then raise exception 'Check failed: %', 'looking up a code doesn''t show trip info'; end if;
+
+  -- Admins joining trips as "WLV admin".
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_join_trip('zz-check-b', 'Not An Admin'); ok := false;
+  exception when others then ok := sqlerrm like '%super admins%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'only admins can join trips from Manage trips'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  m_adm := public.admin_join_trip('zz-check-b', 'Wes Admin');
+  if ((select role from public.trip_members('zz-check-b') where id = m_adm) = 'admin') is not true then raise exception 'Check failed: %', 'an admin joins as WLV admin'; end if;
+  if (public.admin_join_trip('zz-check-b', 'Again') = m_adm) is not true then raise exception 'Check failed: %', 'joining twice keeps one profile'; end if;
+  if ((select gear from public.trip_members('zz-check-b') where id = m_b) is not null) is not true then raise exception 'Check failed: %', 'an admin on a trip sees what staff see'; end if;
+  if (public.set_trip_info('zz-check-b', '{"notes":"From WLV"}')->>'byName' = 'Wes Admin') is not true then raise exception 'Check failed: %', 'an admin on a trip can edit its trip info'; end if;
+  update public.members set role = 'vf' where id = m_adm;
+  if ((select role from public.trip_members('zz-check-b') where id = m_adm) = 'admin') is not true then raise exception 'Check failed: %', 'an admin can''t change their own role'; end if;
+  if (((select x from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-b')->>'staff')::int = 0) is not true then raise exception 'Check failed: %', 'admins aren''t counted as trip staff'; end if;
+  if (((select x from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-b')->>'joined')::boolean) is not true then raise exception 'Check failed: %', 'Manage trips shows which trips you''ve joined'; end if;
+  if ((select x from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-b')->>'joinedAs' = 'admin') is not true then raise exception 'Check failed: %', 'Manage trips shows how you joined'; end if;
+  n := public.admin_join_all('Wes Admin');
+  if (exists (select 1 from jsonb_array_elements(public.my_trips()) x where x->'trip'->>'id' = 'zz-check-a')) is not true then raise exception 'Check failed: %', 'join all adds current trips'; end if;
+  if (public.my_trip('zz-check-b')->'trip'->>'id' = 'zz-check-b' and public.my_trip('zz-check-a')->'trip'->>'id' = 'zz-check-a') is not true then raise exception 'Check failed: %', 'you can open any trip you''re on'; end if;
+  if (public.my_trip('not-a-trip-of-mine') is not null) is not true then raise exception 'Check failed: %', 'opening a trip you''re not on falls back to one you are on'; end if;
+  perform public.admin_leave_trip('zz-check-b');
+  if (not exists (select 1 from jsonb_array_elements(public.my_trips()) x where x->'trip'->>'id' = 'zz-check-b')) is not true then raise exception 'Check failed: %', 'an admin can leave a trip'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_leave_trip('zz-check-a'); ok := false;
+  exception when others then ok := sqlerrm like '%admin%';
+  end;
+  if (ok and (select count(*) from public.trip_members('zz-check-a') where id = m_p1) = 1) is not true then raise exception 'Check failed: %', 'only admin memberships can be left this way'; end if;
+  if ((select count(*) from jsonb_array_elements(public.my_trips())) = 1) is not true then raise exception 'Check failed: %', 'my trips lists only your own'; end if;
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  insert into public.admins (user_id, added_by) values (u_vf, u_adm) on conflict do nothing;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  perform public.admin_join_trip('zz-check-b', 'Sam as admin');
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  perform public.admin_remove_admin(u_vf);
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  if ((select count(*) from public.members where user_id = u_vf and role = 'admin') = 0 and (select count(*) from public.members where user_id = u_vf) = 1) is not true then raise exception 'Check failed: %', 'removing an admin takes them off trips they joined as admin, and nothing else'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
 
   -- Code guessing is limited.
   for i in 1..10 loop perform public.find_trip_code('guess-' || i); end loop;

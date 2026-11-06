@@ -195,6 +195,7 @@ const DemoTripData = (() => {
       return m.id;
     },
     async listMembers(tripId){ return clone(list('members', tripId)); },
+    async myTrips(){ return []; },  // the demo puts each person on one trip
     async listMessages(tripId){ return clone(list('messages', tripId)); },
     async postMessage(tripId, message){
       list('messages', tripId).push(clone(message));
@@ -281,8 +282,9 @@ const LiveTripData = (() => {
       if(d && d.error === 'too_many') throw new Error('too_many');
       return d || null;
     },
-    async myMembership(){
-      const d = await run(sb().rpc('my_trip'));
+    // The trip saved in this browser if you're still on it, otherwise your most recent.
+    async myMembership(session){
+      const d = await run(sb().rpc('my_trip', { p_trip:(session && session.tripId) || null }));
       return d ? { trip:d.trip, role:d.role, code:d.trip.code, memberId:d.memberId } : null;
     },
     async joinTrip(code, m){
@@ -292,6 +294,7 @@ const LiveTripData = (() => {
     async listMembers(tripId){
       return (await run(sb().rpc('trip_members', { p_trip:tripId }))).map(memberOf);
     },
+    async myTrips(){ return (await run(sb().rpc('my_trips'))) || []; },
     // The database decides what actually changes (see members_guard in setup.sql).
     async saveMember(tripId, m){
       await run(sb().from('members').update({
@@ -343,6 +346,9 @@ const LiveTripData = (() => {
         p_dates:t.when == null ? null : t.when }));
     },
     async adminList(){ return (await run(sb().rpc('admin_list_admins'))) || []; },
+    async adminJoin(tripId, name){ return run(sb().rpc('admin_join_trip', { p_trip:tripId, p_name:name })); },
+    async adminJoinAll(name){ return run(sb().rpc('admin_join_all', { p_name:name })); },
+    async adminLeave(tripId){ await run(sb().rpc('admin_leave_trip', { p_trip:tripId })); },
     async adminAdd(email){ return (await run(sb().rpc('admin_add_admin', { p_email:email }))) || []; },
     async adminRemove(userId){ return (await run(sb().rpc('admin_remove_admin', { p_user:userId }))) || []; },
     reset(){}
@@ -354,7 +360,7 @@ const TripData = TRIP_CONFIG.supabaseUrl && TRIP_CONFIG.supabaseAnonKey ? LiveTr
 
 const MyTrip = (() => {
   const SESSION_KEY = 'gearwrangler_tripSession';
-  const ROLE_LABEL = { participant:'Participant', vf:'Venture Fellow', guide:'Guide' };
+  const ROLE_LABEL = { participant:'Participant', vf:'Venture Fellow', guide:'Guide', admin:'WLV admin' };
   const VIEWS = ['home', 'info', 'gear', 'travel', 'crew', 'messages', 'oneonone'];
 
   // Destination photos, matched to a trip by a word in its id. All from Wikimedia Commons.
@@ -383,7 +389,8 @@ const MyTrip = (() => {
     return { step:'code', view:'home', trip:null, role:null, code:null, me:null, members:[], messages:[],
       error:'', notice:'', msgTab:'board', thread:null, open:null, editing:false, loaded:false,
       checked:false, user:null, authMode:'signin', email:'', busy:false, travelEdit:false, infoEdit:false, editMsg:null,
-      admin:false, adminTrips:[], adminEdit:null, adminDraft:null, admins:[], adminError:'' };
+      admin:false, adminTrips:[], adminEdit:null, adminDraft:null, admins:[], adminError:'',
+      myTrips:[], adminName:'' };
   }
 
   // ---------- Session: which trip and which person, in this browser ----------
@@ -412,6 +419,7 @@ const MyTrip = (() => {
       s.trip = found.trip; s.role = found.role; s.code = found.code;
       await refresh(found.memberId);
     }
+    s.myTrips = found && s.me && TripData.myTrips ? await TripData.myTrips() : [];
     if(!found || !s.me){
       writeSession(null);
       s.trip = null; s.me = null; s.loaded = false;
@@ -421,7 +429,7 @@ const MyTrip = (() => {
       refreshLinks(); buildTabs();
       return false;
     }
-    writeSession({ code:found.code, memberId:found.memberId });
+    writeSession({ code:found.code, memberId:found.memberId, tripId:found.trip.id });
     s.step = 'in';
     s.loaded = true;
     refreshLinks(); buildTabs();
@@ -441,7 +449,7 @@ const MyTrip = (() => {
   }
 
   // ---------- Small helpers ----------
-  const isStaff = m => m && (m.role === 'vf' || m.role === 'guide');
+  const isStaff = m => m && (m.role === 'vf' || m.role === 'guide' || m.role === 'admin');
   const participants = () => s.members.filter(m => m.role === 'participant');
   const staffMembers = () => s.members.filter(isStaff);
   function initials(name){
@@ -561,6 +569,7 @@ const MyTrip = (() => {
     else if(s.step === 'code') el.innerHTML = codeHtml();
     else if(s.step === 'profile') el.innerHTML = profileHtml();
     else if(s.step === 'admin') el.innerHTML = adminHtml();
+    else if(s.step === 'trips') el.innerHTML = tripsHtml();
     else el.innerHTML = shellHtml();
   }
 
@@ -716,12 +725,13 @@ const MyTrip = (() => {
           <span class="trip-nav-link" onclick="goToHero()">← Handbook</span>
           <span class="trip-nav-right">
             <span class="trip-nav-who">${esc(s.me.name)}<span class="hide-sm"> · ${esc(ROLE_LABEL[s.me.role])}</span></span>
+            ${s.myTrips.length > 1 ? `<button class="trip-signout" onclick="MyTrip.openTrips()">Switch trip</button>` : ''}
             ${s.admin ? `<button class="trip-signout" onclick="MyTrip.openAdmin()">Admin</button>` : ''}
             <button class="trip-signout" onclick="MyTrip.signOut()">Sign out</button>
           </span>
         </nav>
         <div class="trip-hero-content">
-          <div class="trip-eyebrow">${staff ? "Expedition you're leading" : 'Your expedition'}</div>
+          <div class="trip-eyebrow">${s.me.role === 'admin' ? "You're here as WLV admin" : staff ? "Expedition you're leading" : 'Your expedition'}</div>
           <h1>${esc(exp.name)}</h1>
           <p>${esc([exp.location, exp.when].filter(Boolean).join(' · '))}</p>
           ${countdown ? `<div class="trip-countdown">${countdown}</div>` : ''}
@@ -911,7 +921,7 @@ const MyTrip = (() => {
       <input id="editName" class="search-box" maxlength="40" value="${esc(me.name)}">
       <label class="plan-label" for="editAbout">About you <span class="optional">(optional)</span></label>
       <input id="editAbout" class="search-box" maxlength="80" value="${esc(me.about || '')}">
-      ${staff ? `<label class="plan-label" for="editRole">Role</label>
+      ${staff && me.role !== 'admin' ? `<label class="plan-label" for="editRole">Role</label>
       <select id="editRole" class="owned-select full">${['vf', 'guide'].map(r => `<option value="${r}"${me.role === r ? ' selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}</select>` : ''}
       ${s.error ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
       <div class="button-row"><button class="btn small" onclick="MyTrip.saveProfile()">Save</button>
@@ -1211,6 +1221,52 @@ const MyTrip = (() => {
     return html;
   }
 
+  // ---------- Your trips (for people on more than one) ----------
+  function tripsHtml(){
+    const roleText = r => ROLE_LABEL[r] || '';
+    const rows = s.myTrips.map(x => {
+      const exp = adminExpedition(x.trip);
+      const here = s.trip && s.trip.id === x.trip.id;
+      return `<button class="member-head trip-pick${here ? ' here' : ''}" onclick="MyTrip.switchTrip('${esc(x.trip.id)}')">
+        <span class="person-body"><span class="person-name">${esc(exp.name)}</span>
+        <span class="person-sub">${esc(tripDates({ starts:x.trip.starts, ends:x.trip.ends }))} · ${esc(roleText(x.memberRole))}</span></span>
+        ${here ? `<span class="chip ok">Open now</span>` : `<span class="task-go" aria-hidden="true">›</span>`}</button>`;
+    }).join('');
+    return `<div class="trip-shell">
+      <nav class="admin-bar">
+        <span class="trip-nav-link" onclick="MyTrip.closeTrips()">← Back</span>
+        <span class="trip-nav-right">
+          ${s.admin ? `<button class="trip-signout" onclick="MyTrip.openAdmin()">Admin</button>` : ''}
+          <button class="trip-signout" onclick="MyTrip.signOut()">Sign out</button>
+        </span>
+      </nav>
+      <main class="trip-inner">
+        <h1 class="trip-h2" tabindex="-1">Your trips.</h1>
+        <p class="subtext">Pick one to open. This browser remembers your choice.</p>
+        <div class="trip-picks">${rows}</div>
+      </main></div>`;
+  }
+  async function openTrips(){
+    s.myTrips = await TripData.myTrips();
+    s.step = 'trips'; s.notice = '';
+    render();
+    window.scrollTo({ top:0 });
+    focusHeading(document.getElementById('screen-trip'));
+  }
+  function closeTrips(){
+    s.step = s.me ? 'in' : 'code';
+    render();
+  }
+  async function switchTrip(tripId){
+    writeSession({ tripId });
+    s.view = 'home'; s.notice = ''; s.error = ''; s.open = null; s.thread = null; s.msgTab = 'board';
+    s.adminEdit = null; s.adminDraft = null;
+    await resume();
+    render();
+    window.scrollTo({ top:0 });
+    focusHeading(document.getElementById('screen-trip'));
+  }
+
   // ---------- Manage trips (super admins) ----------
   // Admins add trips and change codes. The database checks every change (see admin_* in setup.sql).
   const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';  // no 0/O, 1/I/L
@@ -1249,8 +1305,65 @@ const MyTrip = (() => {
     return t.starts ? dayText(t.starts) + (t.ends ? ' – ' + dayText(t.ends) : '') : 'No dates yet';
   }
   async function loadAdmin(){
-    [s.adminTrips, s.admins] = await Promise.all([TripData.adminTrips(), TripData.adminList()]);
+    [s.adminTrips, s.admins, s.myTrips] = await Promise.all([TripData.adminTrips(), TripData.adminList(), TripData.myTrips()]);
+    if(!s.adminName && s.me) s.adminName = s.me.name;
     s.step = 'admin';
+  }
+  function adminJoinName(){
+    const name = val('admName');
+    s.adminName = name;
+    if(!name){
+      s.error = 'Add your name first, as crews will see it.';
+      render();
+      const el = document.getElementById('admName');
+      if(el) el.focus();
+    }
+    return name;
+  }
+  async function adminJoin(tripId){
+    if(s.busy) return;
+    const name = adminJoinName();
+    if(!name) return;
+    const t = s.adminTrips.find(x => x.id === tripId);
+    s.error = ''; s.busy = true;
+    try{ await TripData.adminJoin(tripId, name); }
+    finally{ s.busy = false; }
+    await loadAdmin();
+    s.notice = `You joined ${esc(t ? adminExpedition(t).name : 'the trip')} as WLV admin. Click Open to see it.`;
+    render();
+    window.scrollTo({ top:0 });
+  }
+  async function adminJoinAll(){
+    if(s.busy) return;
+    const name = adminJoinName();
+    if(!name) return;
+    const left = s.adminTrips.filter(t => !(t.ends && t.ends < todayIso()) && !t.joined).length;
+    if(!confirm(`Join ${left} trip${left === 1 ? '' : 's'} as WLV admin? You'll be listed in each crew, and you can leave any of them later.`)) return;
+    s.error = ''; s.busy = true;
+    let n = 0;
+    try{ n = await TripData.adminJoinAll(name); }
+    finally{ s.busy = false; }
+    await loadAdmin();
+    s.notice = `You joined ${n} trip${n === 1 ? '' : 's'} as WLV admin. Use Switch trip to move between them.`;
+    render();
+    window.scrollTo({ top:0 });
+  }
+  async function adminLeave(tripId){
+    const t = s.adminTrips.find(x => x.id === tripId);
+    const name = t ? adminExpedition(t).name : 'this trip';
+    if(s.busy || !confirm(`Leave ${name}? You'll drop off its crew list. Your messages stay.`)) return;
+    s.error = ''; s.busy = true;
+    try{ await TripData.adminLeave(tripId); }
+    finally{ s.busy = false; }
+    if(s.trip && s.trip.id === tripId){
+      s.trip = null; s.me = null; s.loaded = false;
+      writeSession(null);
+      refreshLinks(); buildTabs();
+    }
+    await loadAdmin();
+    s.notice = `You left ${esc(name)}.`;
+    render();
+    window.scrollTo({ top:0 });
   }
   async function openAdmin(){
     if(!s.admin) return;
@@ -1282,7 +1395,7 @@ const MyTrip = (() => {
       <nav class="admin-bar">
         <span class="trip-nav-link" onclick="goToHero()">← Handbook</span>
         <span class="trip-nav-right">
-          ${s.me ? `<button class="trip-signout" onclick="MyTrip.leaveAdmin()">My expedition</button>`
+          ${s.me || s.myTrips.length ? `<button class="trip-signout" onclick="MyTrip.leaveAdmin()">My expedition</button>`
             : `<button class="trip-signout" onclick="MyTrip.joinWithCode()">Join a trip</button>`}
           <button class="trip-signout" onclick="MyTrip.signOut()">Sign out</button>
         </span>
@@ -1290,17 +1403,28 @@ const MyTrip = (() => {
       <main class="trip-inner">
         <div class="eyebrow">Super admin</div>
         <h1 class="trip-h2">Manage trips.</h1>
-        <p class="subtext">Add trips and change their codes. You see codes and head counts, not people, gear, or messages.</p>
+        <p class="subtext">Add trips and change their codes. To see a trip's people, gear, and messages, join it.</p>
         ${s.notice ? `<div class="trip-notice" role="status">${s.notice}</div>` : ''}
         ${s.error && !formOpen ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
         ${s.adminEdit === 'new' ? tripFormHtml(null)
           : `<button class="btn" onclick="MyTrip.adminEdit('new')"${formOpen ? ' disabled' : ''}>Add a trip</button>`}
+        ${joinBoxHtml(current)}
         <div class="section-label">Trips · ${current.length}</div>
         ${current.map(adminTripHtml).join('') || `<p class="fine-print">No trips yet.</p>`}
         ${past.length ? `<div class="section-label">Ended · ${past.length}</div>` + past.map(adminTripHtml).join('') : ''}
         ${adminsHtml()}
         ${s.user ? `<p class="fine-print trip-device">Signed in as ${esc(s.user.email)}.</p>` : ''}
       </main></div>`;
+  }
+  // Your name for joining, and Join all.
+  function joinBoxHtml(current){
+    const left = current.filter(t => !t.joined).length;
+    return `<div class="edit-card">
+      <label class="plan-label" for="admName">Your name on trips you join</label>
+      <input id="admName" class="search-box" maxlength="40" autocomplete="name" placeholder="Alex Park" value="${esc(s.adminName)}">
+      <p class="fine-print">You'll be listed in that trip's crew as WLV admin, with the same access as its staff: gear, flights, private messages, and trip info. You can leave any time.</p>
+      <button class="btn small" onclick="MyTrip.adminJoinAll()"${left ? '' : ' disabled'}>${left ? `Join all current trips (${left})` : 'On every current trip'}</button>
+    </div>`;
   }
   // Who else is a super admin, and the box to add one.
   function adminsHtml(){
@@ -1326,7 +1450,7 @@ const MyTrip = (() => {
     const exp = adminExpedition(t);
     const counts = `${t.participants} participant${t.participants === 1 ? '' : 's'} · ${t.staff} staff`;
     const head = `<div class="admin-trip-head">
-        <div><div class="person-name">${esc(exp.name)}</div>
+        <div><div class="person-name">${esc(exp.name)}${t.joined ? ' <span class="chip ok">Joined</span>' : ''}</div>
         <div class="person-sub">${esc(tripDates(t))} · ${esc(counts)}</div></div></div>`;
     if(s.adminEdit === t.id) return `<div class="edit-card admin-trip open">${head}${tripFormHtml(t)}</div>`;
     return `<div class="edit-card admin-trip">${head}
@@ -1335,9 +1459,14 @@ const MyTrip = (() => {
         <div><div class="code-label">Staff code</div><div class="code-value">${esc(t.staffCode)}</div></div>
       </div>
       <div class="button-row">
+        ${t.joined ? `<button class="btn small" onclick="MyTrip.switchTrip('${esc(t.id)}')">Open</button>`
+          : `<button class="btn small" onclick="MyTrip.adminJoin('${esc(t.id)}')">Join</button>`}
         <button class="btn secondary small" onclick="MyTrip.adminEdit('${esc(t.id)}')"${s.adminEdit ? ' disabled' : ''}>Change codes or dates</button>
         <button class="btn secondary small" onclick="MyTrip.copy('${esc(inviteLink(t.code))}', 'Invite link copied.')">Copy invite link</button>
-      </div></div>`;
+      </div>
+      ${t.joinedAs === 'admin' ? `<p class="fine-print">You're on this trip as WLV admin. <span class="text-link" onclick="MyTrip.adminLeave('${esc(t.id)}')">Leave it</span></p>`
+        : t.joined ? `<p class="fine-print">You're on this trip as ${esc((ROLE_LABEL[t.joinedAs] || 'a member').replace(/^(?=[VG])/, 'a '))}.</p>` : ''}
+      </div>`;
   }
   // The add form (t = null) or the edit form for trip t.
   function tripFormHtml(t){
@@ -1640,7 +1769,7 @@ const MyTrip = (() => {
     if(!name){ s.error = 'Add your name.'; render(); return; }
     s.me.name = name;
     s.me.about = val('editAbout');
-    if(isStaff(s.me)) s.me.role = val('editRole') || s.me.role;
+    if(isStaff(s.me) && s.me.role !== 'admin') s.me.role = val('editRole') || s.me.role;
     await TripData.saveMember(s.trip.id, s.me);
     await refresh();
     s.editing = false; s.error = '';
@@ -1924,5 +2053,6 @@ const MyTrip = (() => {
     removeTravel:guard(removeTravel), editMessage, saveMessage:guard(saveMessage), deleteMessage:guard(deleteMessage),
     openAdmin:guard(openAdmin), leaveAdmin:guard(leaveAdmin), joinWithCode, adminEdit, adminCancel,
     adminPickExpedition, adminNameChanged, adminNewCode, adminSave:guard(adminSave), readDraft,
-    adminAdd, adminRemove };
+    adminAdd, adminRemove, adminJoin:guard(adminJoin), adminJoinAll:guard(adminJoinAll), adminLeave:guard(adminLeave),
+    openTrips:guard(openTrips), closeTrips, switchTrip:guard(switchTrip) };
 })();

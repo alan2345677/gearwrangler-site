@@ -19,7 +19,7 @@ About 15 minutes, once.
 2. Click **New query**. Paste in all of [`supabase/setup.sql`](supabase/setup.sql), then click **Run**.
    - You should see **Setup done**.
 3. Click **New query** again. Paste in all of [`supabase/check.sql`](supabase/check.sql), then click **Run**.
-   - You should see **All checks passed**. It tries 89 things people should and shouldn't be able to do, using made-up people, then deletes them.
+   - You should see **All checks passed**. It tries 105 things people should and shouldn't be able to do, using made-up people, then deletes them.
    - If you see an error instead, copy it and send it to Claude.
 
 ## 3. Sign-in settings
@@ -39,7 +39,7 @@ The only email the site sends is "Forgot password?". Supabase's free sender hand
 
 ## 4. Make yourself a super admin
 
-Super admins manage trips on the site itself: **Log into your expedition → Manage trips** (or the **Admin** button once you're on a trip). They can add trips, including ones that aren't on the public expedition list, change any trip's codes and dates, and add or remove other admins. They see each trip's codes and head counts, but not its people, gear, or messages unless they join with a code like anyone else.
+Super admins manage trips on the site itself: **Log into your expedition → Manage trips** (or the **Admin** button once you're on a trip). They can add trips, including ones that aren't on the public expedition list, change any trip's codes and dates, and add or remove other admins. They see each trip's codes and head counts. To see a trip's people, gear, flights, and messages, they click **Join** on that trip (or **Join all current trips**). They then show up in that trip's crew as **WLV admin**, with the same access as its staff, and can **Leave** it again from Manage trips. Anyone on more than one trip gets a **Switch trip** button.
 
 The first admin has to be added here, by hand:
 
@@ -93,5 +93,6 @@ These rules are enforced by the database, so nobody can get around them from the
 - Flights: you always see your own, and your trip's staff see everyone's. The rest of the crew sees yours only if you tick "Show my flights to my crew".
 - Only a trip's own staff can change its Trip info (meeting point, airport, notes), and the edit is signed with their name.
 - After 10 wrong codes in an hour, that account can't try more codes until the hour is up.
-- Only super admins can add trips, change codes, or add admins, and nobody can make themselves one. Admins don't see a trip's people, gear, or messages unless they join it.
+- Only super admins can add trips, change codes, or add admins, and nobody can make themselves one. Admins don't see a trip's people, gear, or messages unless they join it, and when they do they're listed in its crew as WLV admin.
+- Removing someone as an admin also takes them off every trip they joined as WLV admin.
 - New codes need at least 8 characters, including a number, and can't match any other trip's code.
