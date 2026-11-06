@@ -19,7 +19,7 @@ About 15 minutes, once.
 2. Click **New query**. Paste in all of [`supabase/setup.sql`](supabase/setup.sql), then click **Run**.
    - You should see **Setup done**.
 3. Click **New query** again. Paste in all of [`supabase/check.sql`](supabase/check.sql), then click **Run**.
-   - You should see **All checks passed**. It tries 82 things people should and shouldn't be able to do, using made-up people, then deletes them.
+   - You should see **All checks passed**. It tries 89 things people should and shouldn't be able to do, using made-up people, then deletes them.
    - If you see an error instead, copy it and send it to Claude.
 
 ## 3. Sign-in settings
@@ -88,6 +88,7 @@ These rules are enforced by the database, so nobody can get around them from the
 - Staff codes are checked on the server and never sent to participants.
 - Participants see their crew's names, not each other's gear, staff checks, or 1-1s.
 - Private messages are visible only to that participant and the trip's staff.
+- You can edit or delete your own messages, and nobody else's. Edited messages say "edited".
 - Only a trip's own staff can verify gear, and the check is signed with their real name.
 - Flights: you always see your own, and your trip's staff see everyone's. The rest of the crew sees yours only if you tick "Show my flights to my crew".
 - Only a trip's own staff can change its Trip info (meeting point, airport, notes), and the edit is signed with their name.

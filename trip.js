@@ -200,6 +200,17 @@ const DemoTripData = (() => {
       list('messages', tripId).push(clone(message));
       save();
     },
+    async editMessage(tripId, id, text){
+      const m = list('messages', tripId).find(x => x.id === id);
+      if(!m) throw new Error('not_yours');
+      m.text = text; m.editedAt = new Date().toISOString();
+      save();
+    },
+    async deleteMessage(tripId, id){
+      const d = data();
+      d.messages[tripId] = list('messages', tripId).filter(x => x.id !== id);
+      save();
+    },
     async setTripInfo(tripId, info, byName){
       const d = data();
       d.info = d.info || {};
@@ -242,7 +253,7 @@ const LiveTripData = (() => {
     gear:r.gear || {}, gearUpdatedAt:r.gear_updated_at || null, review:r.review || null,
     oneOnOne:r.one_on_one || null, joinedAt:r.joined_at, travel:r.travel || null, travelShared:!!r.travel_shared });
   const messageOf = r => ({ id:r.id, at:r.at, authorId:r.author_id, authorName:r.author_name,
-    authorRole:r.author_role, text:r.text, thread:r.thread });
+    authorRole:r.author_role, text:r.text, thread:r.thread, editedAt:r.edited_at || null });
 
   return {
     isDemo:false, needsAuth:true,
@@ -289,6 +300,16 @@ const LiveTripData = (() => {
         one_on_one:m.oneOnOne || null, review:m.review || null,
         travel:m.travel || null, travel_shared:!!m.travelShared
       }).eq('id', m.id));
+    },
+    // Your own messages only (messages_update / messages_delete in setup.sql). The database
+    // quietly skips anyone else's, so an empty result means it wasn't yours.
+    async editMessage(tripId, id, text){
+      const rows = await run(sb().from('messages').update({ text }).eq('id', id).select('id'));
+      if(!rows || !rows.length) throw new Error('not_yours');
+    },
+    async deleteMessage(tripId, id){
+      const rows = await run(sb().from('messages').delete().eq('id', id).select('id'));
+      if(!rows || !rows.length) throw new Error('not_yours');
     },
     // Staff only; the database signs it with their name (set_trip_info in setup.sql).
     async setTripInfo(tripId, info){
@@ -361,7 +382,7 @@ const MyTrip = (() => {
   function freshState(){
     return { step:'code', view:'home', trip:null, role:null, code:null, me:null, members:[], messages:[],
       error:'', notice:'', msgTab:'board', thread:null, open:null, editing:false, loaded:false,
-      checked:false, user:null, authMode:'signin', email:'', busy:false, travelEdit:false, infoEdit:false,
+      checked:false, user:null, authMode:'signin', email:'', busy:false, travelEdit:false, infoEdit:false, editMsg:null,
       admin:false, adminTrips:[], adminEdit:null, adminDraft:null, admins:[], adminError:'' };
   }
 
@@ -524,7 +545,7 @@ const MyTrip = (() => {
   function go(view){
     s.view = view;
     s.notice = '';
-    s.editing = false; s.travelEdit = false; s.infoEdit = false; s.error = '';
+    s.editing = false; s.travelEdit = false; s.infoEdit = false; s.editMsg = null; s.error = '';
     render();
     const tabs = document.querySelector('.trip-tabs');
     if(tabs && view !== 'home') tabs.scrollIntoView({ block:'start' });
@@ -548,6 +569,7 @@ const MyTrip = (() => {
     const msg = String((e && (e.message || e.error_description)) || e || '');
     const code = (e && e.code) || '';
     if(msg === 'too_many') return 'Too many wrong codes. Wait an hour, then try again.';
+    if(msg === 'not_yours') return "That message couldn't be changed. It may already be deleted. You can only change your own.";
     if(/invalid login credentials/i.test(msg)) return "That email and password don't match.";
     if(/already (been )?registered|already exists/i.test(msg) || code === 'user_already_exists') return 'That email already has an account. Sign in instead.';
     if(/email not confirmed/i.test(msg)) return 'Confirm your email first: check your inbox.';
@@ -899,10 +921,20 @@ const MyTrip = (() => {
   // ---------- Messages ----------
   function messageHtml(m){
     const staff = m.authorRole && m.authorRole !== 'participant';
+    const mine = s.me && m.authorId === s.me.id;
+    const editing = mine && s.editMsg === m.id;
+    const body = editing
+      ? `<label class="sr-only" for="editMsgText">Edit message</label>
+        <textarea id="editMsgText" class="trip-textarea" maxlength="2000">${esc(m.text)}</textarea>
+        <div class="button-row"><button class="btn small" onclick="MyTrip.saveMessage('${esc(m.id)}')">Save</button>
+        <button class="btn secondary small" onclick="MyTrip.editMessage(null)">Cancel</button></div>`
+      : `<div class="msg-text">${esc(m.text)}</div>
+        ${mine ? `<div class="msg-actions"><button class="link-btn-plain" onclick="MyTrip.editMessage('${esc(m.id)}')">Edit</button>
+          <button class="link-btn-plain" onclick="MyTrip.deleteMessage('${esc(m.id)}')">Delete</button></div>` : ''}`;
     return `<div class="msg">
       <span class="avatar small${staff ? ' staff' : ''}" aria-hidden="true">${esc(initials(m.authorName))}</span>
-      <div class="msg-body"><div class="msg-head"><strong>${esc(m.authorName)}</strong>${staff ? ` <span class="chip wait">${esc(ROLE_LABEL[m.authorRole])}</span>` : ''} <span class="msg-time">${esc(stamp(m.at))}</span></div>
-      <div class="msg-text">${esc(m.text)}</div></div></div>`;
+      <div class="msg-body"><div class="msg-head"><strong>${esc(m.authorName)}</strong>${staff ? ` <span class="chip wait">${esc(ROLE_LABEL[m.authorRole])}</span>` : ''} <span class="msg-time">${esc(stamp(m.at))}${m.editedAt ? ' · edited' : ''}</span></div>
+      ${body}</div></div>`;
   }
   function composerHtml(id, placeholder, action){
     return `<div class="composer">
@@ -1098,13 +1130,15 @@ const MyTrip = (() => {
           <span>Show my flights to my crew<span class="fine-print share-sub">Staff on this trip always see them.</span></span></label>
         ${s.error ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
         <div class="button-row"><button class="btn small" onclick="MyTrip.saveTravel()">Save flights</button>
-        ${hasMine ? `<button class="btn secondary small" onclick="MyTrip.cancelTravel()">Cancel</button>` : ''}</div></div>`;
+        ${hasMine ? `<button class="btn secondary small" onclick="MyTrip.cancelTravel()">Cancel</button>` : ''}</div>
+        <p class="fine-print">To remove one flight, clear its fields and save.</p></div>`;
     } else {
       html += `<div class="edit-card">` + factRows([
           ['Arriving', esc(legEmpty(mine.arrive) ? 'Not added yet' : legText(mine.arrive))],
           ['Flying home', esc(legEmpty(mine.depart) ? 'Not added yet' : legText(mine.depart))]]) +
-        `<p class="fine-print">${me.travelShared ? 'Your crew and staff can see these.' : 'Only staff can see these.'}
-        <span class="text-link" onclick="MyTrip.editTravel()">Edit</span></p></div>`;
+        `<p class="fine-print">${me.travelShared ? 'Your crew and staff can see these.' : 'Only staff can see these.'}</p>
+        <div class="button-row"><button class="btn secondary small" onclick="MyTrip.editTravel()">Edit</button>
+        <button class="btn secondary small" onclick="MyTrip.removeTravel()">Remove my flights</button></div></div>`;
     }
     // Staff see everyone. Participants see themselves plus anyone who shares (the database
     // already leaves out flights that aren't shared with them).
@@ -1735,6 +1769,45 @@ const MyTrip = (() => {
     render();
     window.scrollTo({ top:0 });
   }
+  async function removeTravel(){
+    if(s.busy || !confirm('Remove your flights? Staff and crew will stop seeing them.')) return;
+    s.me.travel = null;
+    s.me.travelShared = false;
+    s.busy = true;
+    try{ await TripData.saveMember(s.trip.id, s.me); }
+    finally{ s.busy = false; }
+    await refresh();
+    s.travelEdit = false; s.error = '';
+    s.notice = 'Flights removed.';
+    render();
+  }
+  function editMessage(id){
+    s.editMsg = id; s.notice = '';
+    render();
+    const el = document.getElementById('editMsgText');
+    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  }
+  async function saveMessage(id){
+    if(s.busy) return;
+    const text = val('editMsgText');
+    if(!text){ await deleteMessage(id); return; }
+    s.busy = true;
+    try{ await TripData.editMessage(s.trip.id, id, text); }
+    finally{ s.busy = false; }
+    s.editMsg = null;
+    await refresh();
+    render();
+  }
+  async function deleteMessage(id){
+    if(s.busy || !confirm('Delete this message? Nobody will see it anymore.')) return;
+    s.busy = true;
+    try{ await TripData.deleteMessage(s.trip.id, id); }
+    finally{ s.busy = false; }
+    s.editMsg = null;
+    await refresh();
+    s.notice = 'Message deleted.';
+    render();
+  }
   // Tab-separated, so it pastes into a spreadsheet as columns.
   function copyTravel(){
     const cell = v => String(v || '').replace(/[\t\r\n]+/g, ' ');
@@ -1848,6 +1921,7 @@ const MyTrip = (() => {
     saveBooking:guard(saveBooking), clearBooking:guard(clearBooking), saveBookingLink:guard(saveBookingLink),
     copy, gearChanged, dataReady, refreshLinks, tabHtml, hasSession,
     editInfo, cancelInfo, saveInfo:guard(saveInfo), editTravel, cancelTravel, saveTravel:guard(saveTravel), copyTravel,
+    removeTravel:guard(removeTravel), editMessage, saveMessage:guard(saveMessage), deleteMessage:guard(deleteMessage),
     openAdmin:guard(openAdmin), leaveAdmin:guard(leaveAdmin), joinWithCode, adminEdit, adminCancel,
     adminPickExpedition, adminNameChanged, adminNewCode, adminSave:guard(adminSave), readDraft,
     adminAdd, adminRemove };

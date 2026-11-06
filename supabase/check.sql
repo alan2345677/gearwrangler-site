@@ -18,7 +18,7 @@ declare
   u_b   uuid := gen_random_uuid();
   u_adm uuid := gen_random_uuid();
   m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid;
-  j jsonb; n int; ok boolean; i int;
+  j jsonb; n int; ok boolean; i int; msg_id uuid;
 begin
   -- Setup, as the dashboard would.
   insert into auth.users (id, email) values
@@ -136,6 +136,35 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', u_out)::text, true), set_config('role', 'authenticated', true);
   select count(*) into n from public.messages;
   if (n = 0) is not true then raise exception 'Check failed: %', 'a stranger sees no messages'; end if;
+
+  -- Editing and deleting messages: your own only.
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  select id into msg_id from public.messages where trip_id = 'zz-check-a' and thread is null and author_id = m_p1;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p2)::text, true), set_config('role', 'authenticated', true);
+  update public.messages set text = 'Edited by someone else' where id = msg_id;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'you can''t edit someone else''s message'; end if;
+  delete from public.messages where id = msg_id;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'you can''t delete someone else''s message'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  update public.messages set text = 'Edited by staff' where id = msg_id;
+  get diagnostics n = row_count;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'staff can''t edit a participant''s message'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    update public.messages set author_name = 'Someone else' where id = msg_id; ok := false;
+  exception when insufficient_privilege then ok := true;
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'editing can change only the text'; end if;
+  update public.messages set text = 'Hi crew!' where id = msg_id;
+  if ((select text = 'Hi crew!' and edited_at is not null and author_name = 'Maya Rao' and thread is null
+       from public.messages where id = msg_id)) is not true then raise exception 'Check failed: %', 'you can edit your own message, and it''s marked edited'; end if;
+  delete from public.messages where trip_id = 'zz-check-a' and thread = m_p1 and author_id = m_p1;
+  get diagnostics n = row_count;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'you can delete your own message'; end if;
+  select count(*) into n from public.messages where thread = m_p1;
+  if (n = 1) is not true then raise exception 'Check failed: %', 'deleting yours leaves staff replies in place'; end if;
 
   -- Super admins.
   perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);

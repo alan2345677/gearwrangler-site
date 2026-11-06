@@ -17,6 +17,7 @@
 --   - Flights: you always see your own, and the trip's staff see everyone's. The rest of
 --     the crew sees yours only if you choose to share them.
 --   - Only a trip's own staff can change its trip info, and the edit is signed with their name.
+--   - You can edit or delete your own messages, and nobody else's. Edits are marked as edited.
 --   - A private thread is visible only to that participant and the trip's staff.
 --   - Only staff can verify gear, and only on their own trip.
 --   - 10 wrong codes in an hour locks that account out of code guessing for the hour.
@@ -93,6 +94,7 @@ alter table public.trips   add column if not exists info jsonb
 alter table public.members add column if not exists travel jsonb
   check (travel is null or pg_column_size(travel) < 3000);
 alter table public.members add column if not exists travel_shared boolean not null default false;
+alter table public.messages add column if not exists edited_at timestamptz;
 
 alter table public.trips         enable row level security;
 alter table public.members       enable row level security;
@@ -524,6 +526,21 @@ drop trigger if exists messages_fill on public.messages;
 create trigger messages_fill before insert on public.messages
   for each row execute function public.messages_fill();
 
+-- Editing a message: only the text changes, and it's marked as edited.
+create or replace function public.messages_edit() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if auth.uid() is null then return new; end if;
+  new.id := old.id; new.trip_id := old.trip_id; new.author_id := old.author_id;
+  new.author_name := old.author_name; new.author_role := old.author_role;
+  new.thread := old.thread; new.at := old.at;
+  new.edited_at := case when new.text is distinct from old.text then now() else old.edited_at end;
+  return new;
+end $$;
+drop trigger if exists messages_edit on public.messages;
+create trigger messages_edit before update on public.messages
+  for each row execute function public.messages_edit();
+
 
 -- ---------- Who can read and write what ----------
 
@@ -553,17 +570,28 @@ create policy messages_insert on public.messages for insert to authenticated
             where p.id = thread and p.trip_id = messages.trip_id and p.role = 'participant'))
     ));
 
+-- Your own messages only.
+drop policy if exists messages_update on public.messages;
+create policy messages_update on public.messages for update to authenticated
+  using      (author_id is not null and author_id = public.my_member_id(trip_id))
+  with check (author_id is not null and author_id = public.my_member_id(trip_id));
+
+drop policy if exists messages_delete on public.messages;
+create policy messages_delete on public.messages for delete to authenticated
+  using (author_id is not null and author_id = public.my_member_id(trip_id));
+
 -- Table access: nothing for signed-out visitors. Signed-in people go through the rules above.
 revoke all on public.trips, public.members, public.messages, public.code_attempts, public.admins from anon, authenticated;
 grant select, update on public.members to authenticated;
-grant select, insert on public.messages to authenticated;
+grant select, insert, delete on public.messages to authenticated;
+grant update (text) on public.messages to authenticated;  -- the text only
 
 -- Function access.
 revoke execute on function
   public.normal_code(text), public.trips_tidy(), public.my_member_id(text), public.is_staff(text),
   public.trip_json(public.trips, text), public.code_tries_left(), public.find_trip_code(text),
   public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text),
-  public.members_guard(), public.messages_fill(),
+  public.members_guard(), public.messages_fill(), public.messages_edit(),
   public.clean_leg(jsonb), public.clean_travel(jsonb), public.set_trip_info(text, jsonb),
   public.is_admin(), public.admin_only(), public.check_new_codes(text, text, text), public.admin_trips(),
   public.admin_add_trip(text, text, text, date, date, text, text, text),
