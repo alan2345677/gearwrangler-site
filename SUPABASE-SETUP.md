@@ -1,6 +1,6 @@
-# My trip: setting up the real version
+# The Handbook (log into your expedition): setting up the real version
 
-My trip runs on **Supabase**, a free hosted database with sign-in built in. Until `trip.js` has your Supabase details, the site keeps showing the demo.
+The logged-in side of the Handbook ("Log into your expedition") runs on **Supabase**, a free hosted database with sign-in built in. Until `trip.js` has your Supabase details, the site keeps showing the demo.
 
 About 15 minutes, once.
 
@@ -39,11 +39,11 @@ The only email the site sends is "Forgot password?". Supabase's free sender hand
 
 ## 4. Make yourself a super admin
 
-Super admins manage trips on the site itself: **My trip → Manage trips** (or the **Admin** button once you're on a trip). They can add trips, including ones that aren't on the public expedition list, change any trip's codes and dates, and add or remove other admins. They see each trip's codes and head counts, but not its people, gear, or messages unless they join with a code like anyone else.
+Super admins manage trips on the site itself: **Log into your expedition → Manage trips** (or the **Admin** button once you're on a trip). They can add trips, including ones that aren't on the public expedition list, change any trip's codes and dates, and add or remove other admins. They see each trip's codes and head counts, but not its people, gear, or messages unless they join with a code like anyone else.
 
 The first admin has to be added here, by hand:
 
-1. Create your account on the site (My trip → Create an account).
+1. Create your account on the site (Log into your expedition → Create an account).
 2. In **SQL Editor → New query**, paste this with your email, then click **Run**:
 
    ```sql

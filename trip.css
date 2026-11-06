@@ -1,4 +1,4 @@
-/* ============ MY TRIP (trip.js) ============ */
+/* ============ MY EXPEDITION (trip.js) ============ */
 body.trip-mode #app{ max-width:none; padding:0; }
 body.trip-mode .topbar, body.trip-mode .site-footer{ display:none; }
 
