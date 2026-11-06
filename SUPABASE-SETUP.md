@@ -19,7 +19,7 @@ About 15 minutes, once.
 2. Click **New query**. Paste in all of [`supabase/setup.sql`](supabase/setup.sql), then click **Run**.
    - You should see **Setup done**.
 3. Click **New query** again. Paste in all of [`supabase/check.sql`](supabase/check.sql), then click **Run**.
-   - You should see **All checks passed**. It tries 105 things people should and shouldn't be able to do, using made-up people, then deletes them.
+   - You should see **All checks passed**. It tries 128 things people should and shouldn't be able to do, using made-up people, then deletes them.
    - If you see an error instead, copy it and send it to Claude.
 
 ## 3. Sign-in settings
@@ -95,4 +95,5 @@ These rules are enforced by the database, so nobody can get around them from the
 - After 10 wrong codes in an hour, that account can't try more codes until the hour is up.
 - Only super admins can add trips, change codes, or add admins, and nobody can make themselves one. Admins don't see a trip's people, gear, or messages unless they join it, and when they do they're listed in its crew as WLV admin.
 - Removing someone as an admin also takes them off every trip they joined as WLV admin.
+- Managing people (Crew tab → **Manage**): super admins on a trip can rename anyone, change their role, remove them, and delete any message. A trip's Venture Fellows can do the same, but only to participants and guides. Nobody can do this to themselves or make someone an admin. Removed people can rejoin with the code, starting fresh.
 - New codes need at least 8 characters, including a number, and can't match any other trip's code.

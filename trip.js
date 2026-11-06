@@ -196,6 +196,21 @@ const DemoTripData = (() => {
     },
     async listMembers(tripId){ return clone(list('members', tripId)); },
     async myTrips(){ return []; },  // the demo puts each person on one trip
+    async manageRemove(tripId, memberId){
+      const d = data();
+      d.members[tripId] = list('members', tripId).filter(m => m.id !== memberId);
+      d.messages[tripId] = list('messages', tripId).filter(m => m.thread !== memberId)
+        .map(m => m.authorId === memberId ? Object.assign(m, { authorId:null }) : m);
+      save();
+    },
+    async manageUpdate(tripId, memberId, changes){
+      const m = list('members', tripId).find(x => x.id === memberId);
+      if(!m) throw new Error('That person is no longer on this trip.');
+      if(changes.name != null) m.name = changes.name;
+      if(changes.about != null) m.about = changes.about;
+      if(changes.role){ m.role = changes.role; if(m.role === 'participant') m.bookingUrl = ''; }
+      save();
+    },
     async listMessages(tripId){ return clone(list('messages', tripId)); },
     async postMessage(tripId, message){
       list('messages', tripId).push(clone(message));
@@ -295,6 +310,12 @@ const LiveTripData = (() => {
       return (await run(sb().rpc('trip_members', { p_trip:tripId }))).map(memberOf);
     },
     async myTrips(){ return (await run(sb().rpc('my_trips'))) || []; },
+    // Super admins on the trip, or its VFs for participants and guides (can_manage in setup.sql).
+    async manageRemove(tripId, memberId){ await run(sb().rpc('manage_remove_member', { p_member:memberId })); },
+    async manageUpdate(tripId, memberId, c){
+      await run(sb().rpc('manage_update_member', { p_member:memberId, p_name:c.name == null ? null : c.name,
+        p_about:c.about == null ? null : c.about, p_role:c.role || null }));
+    },
     // The database decides what actually changes (see members_guard in setup.sql).
     async saveMember(tripId, m){
       await run(sb().from('members').update({
@@ -388,7 +409,7 @@ const MyTrip = (() => {
   function freshState(){
     return { step:'code', view:'home', trip:null, role:null, code:null, me:null, members:[], messages:[],
       error:'', notice:'', msgTab:'board', thread:null, open:null, editing:false, loaded:false,
-      checked:false, user:null, authMode:'signin', email:'', busy:false, travelEdit:false, infoEdit:false, editMsg:null,
+      checked:false, user:null, authMode:'signin', email:'', busy:false, travelEdit:false, infoEdit:false, editMsg:null, manage:null,
       admin:false, adminTrips:[], adminEdit:null, adminDraft:null, admins:[], adminError:'',
       myTrips:[], adminName:'' };
   }
@@ -451,6 +472,10 @@ const MyTrip = (() => {
   // ---------- Small helpers ----------
   const isStaff = m => m && (m.role === 'vf' || m.role === 'guide' || m.role === 'admin');
   const participants = () => s.members.filter(m => m.role === 'participant');
+  // Super admins on this trip manage anyone; its Venture Fellows manage participants and guides.
+  // Mirrors can_manage in setup.sql, which is what actually decides.
+  const canManageRole = role => !!s.me && (s.admin || (s.me.role === 'vf' && (role === 'participant' || role === 'guide')));
+  const canManage = m => !!m && !!s.me && m.id !== s.me.id && canManageRole(m.role);
   const staffMembers = () => s.members.filter(isStaff);
   function initials(name){
     return String(name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
@@ -553,7 +578,7 @@ const MyTrip = (() => {
   function go(view){
     s.view = view;
     s.notice = '';
-    s.editing = false; s.travelEdit = false; s.infoEdit = false; s.editMsg = null; s.error = '';
+    s.editing = false; s.travelEdit = false; s.infoEdit = false; s.editMsg = null; s.manage = null; s.error = '';
     render();
     const tabs = document.querySelector('.trip-tabs');
     if(tabs && view !== 'home') tabs.scrollIntoView({ block:'start' });
@@ -904,7 +929,9 @@ const MyTrip = (() => {
     const person = m => `<div class="person">
       <span class="avatar${isStaff(m) ? ' staff' : ''}" aria-hidden="true">${esc(initials(m.name))}</span>
       <div class="person-body"><div class="person-name">${esc(m.name)}${m.id === me.id ? ' <span class="you">(you)</span>' : ''}</div>
-      <div class="person-sub">${esc([isStaff(m) ? ROLE_LABEL[m.role] : '', m.about].filter(Boolean).join(' · '))}</div></div></div>`;
+      <div class="person-sub">${esc([isStaff(m) ? ROLE_LABEL[m.role] : '', m.about].filter(Boolean).join(' · '))}</div></div>
+      ${canManage(m) && s.manage !== m.id ? `<button class="btn secondary small" onclick="MyTrip.openManage('${esc(m.id)}')" aria-label="Manage ${esc(m.name)}">Manage</button>` : ''}</div>
+      ${s.manage === m.id && canManage(m) ? manageCardHtml(m) : ''}`;
     let html = `<h2 class="trip-h2" tabindex="-1">Your crew.</h2>`;
     if(s.editing) html += profileFormHtml();
     else html += `<p class="subtext"><span class="text-link" onclick="MyTrip.editProfile()">Edit my profile</span></p>`;
@@ -912,6 +939,24 @@ const MyTrip = (() => {
     html += `<div class="section-label">Participants · ${participants().length}</div>` + (participants().map(person).join('') || `<p class="fine-print">No participants yet.</p>`);
     html += `<p class="fine-print" style="margin-top:18px;">Everyone with your trip's code sees this list.</p>`;
     return html;
+  }
+  // Fix someone's name or role, or take them off the trip.
+  function manageCardHtml(m){
+    const roles = ['participant', 'vf', 'guide'];
+    return `<div class="edit-card manage-card">
+      <label class="plan-label" for="mgName">Name</label>
+      <input id="mgName" class="search-box" maxlength="40" value="${esc(m.name)}">
+      <label class="plan-label" for="mgAbout">About <span class="optional">(optional)</span></label>
+      <input id="mgAbout" class="search-box" maxlength="80" value="${esc(m.about || '')}">
+      ${m.role === 'admin' ? `<p class="fine-print">WLV admins keep their role.</p>` : `<label class="plan-label" for="mgRole">Role</label>
+      <select id="mgRole" class="owned-select full">${roles.map(r => `<option value="${r}"${m.role === r ? ' selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}</select>`}
+      ${s.error ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
+      <div class="button-row"><button class="btn small" onclick="MyTrip.saveManage('${esc(m.id)}')">Save</button>
+      <button class="btn secondary small" onclick="MyTrip.cancelManage()">Cancel</button></div>
+      <div class="danger-zone">
+        <button class="btn secondary small danger" onclick="MyTrip.manageRemove('${esc(m.id)}')">Remove from trip</button>
+        <p class="fine-print">Deletes their gear list, flights, 1-1, and private messages. Their trip board posts stay. They can rejoin with the code, starting fresh.</p>
+      </div></div>`;
   }
   function profileFormHtml(){
     const me = s.me;
@@ -932,6 +977,7 @@ const MyTrip = (() => {
   function messageHtml(m){
     const staff = m.authorRole && m.authorRole !== 'participant';
     const mine = s.me && m.authorId === s.me.id;
+    const canDelete = mine || canManageRole(m.authorRole);
     const editing = mine && s.editMsg === m.id;
     const body = editing
       ? `<label class="sr-only" for="editMsgText">Edit message</label>
@@ -939,7 +985,7 @@ const MyTrip = (() => {
         <div class="button-row"><button class="btn small" onclick="MyTrip.saveMessage('${esc(m.id)}')">Save</button>
         <button class="btn secondary small" onclick="MyTrip.editMessage(null)">Cancel</button></div>`
       : `<div class="msg-text">${esc(m.text)}</div>
-        ${mine ? `<div class="msg-actions"><button class="link-btn-plain" onclick="MyTrip.editMessage('${esc(m.id)}')">Edit</button>
+        ${canDelete ? `<div class="msg-actions">${mine ? `<button class="link-btn-plain" onclick="MyTrip.editMessage('${esc(m.id)}')">Edit</button>` : ''}
           <button class="link-btn-plain" onclick="MyTrip.deleteMessage('${esc(m.id)}')">Delete</button></div>` : ''}`;
     return `<div class="msg">
       <span class="avatar small${staff ? ' staff' : ''}" aria-hidden="true">${esc(initials(m.authorName))}</span>
@@ -1910,6 +1956,45 @@ const MyTrip = (() => {
     s.notice = 'Flights removed.';
     render();
   }
+  function openManage(id){
+    s.manage = id; s.error = ''; s.notice = '';
+    render();
+    const el = document.getElementById('mgName');
+    if(el) el.focus();
+  }
+  function cancelManage(){ s.manage = null; s.error = ''; render(); }
+  async function saveManage(id){
+    if(s.busy) return;
+    const m = s.members.find(x => x.id === id);
+    if(!m) return;
+    const name = val('mgName');
+    if(!name){ s.error = 'Add a name.'; render(); return; }
+    const box = document.getElementById('mgRole');
+    const role = box ? box.value : m.role;
+    if(role !== m.role && role !== 'participant' &&
+      !confirm(`Make ${m.name} a ${ROLE_LABEL[role]}? They'll see everyone's gear, flights, and private messages on this trip.`)) return;
+    s.busy = true;
+    try{ await TripData.manageUpdate(s.trip.id, id, { name, about:val('mgAbout'), role:role !== m.role ? role : null }); }
+    finally{ s.busy = false; }
+    s.manage = null; s.error = '';
+    await refresh();
+    s.notice = role !== m.role ? `${esc(name)} is now a ${esc(ROLE_LABEL[role])}.` : `Saved ${esc(name)}'s profile.`;
+    render();
+  }
+  async function manageRemove(id){
+    const m = s.members.find(x => x.id === id);
+    if(!m || s.busy) return;
+    if(!confirm(`Remove ${m.name} from this trip? Their gear list, flights, 1-1, and private messages are deleted. Board posts stay. They can rejoin with the code.`)) return;
+    s.busy = true;
+    try{ await TripData.manageRemove(s.trip.id, id); }
+    finally{ s.busy = false; }
+    s.manage = null; s.error = ''; s.open = null;
+    if(s.thread === id) s.thread = null;
+    await refresh();
+    s.notice = `${esc(m.name)} was removed from the trip.`;
+    render();
+    window.scrollTo({ top:0 });
+  }
   function editMessage(id){
     s.editMsg = id; s.notice = '';
     render();
@@ -1928,7 +2013,9 @@ const MyTrip = (() => {
     render();
   }
   async function deleteMessage(id){
-    if(s.busy || !confirm('Delete this message? Nobody will see it anymore.')) return;
+    const msg = s.messages.find(x => x.id === id);
+    const theirs = msg && s.me && msg.authorId !== s.me.id;
+    if(s.busy || !confirm(theirs ? `Delete ${msg.authorName}'s message? Nobody will see it anymore.` : 'Delete this message? Nobody will see it anymore.')) return;
     s.busy = true;
     try{ await TripData.deleteMessage(s.trip.id, id); }
     finally{ s.busy = false; }
@@ -2051,6 +2138,7 @@ const MyTrip = (() => {
     copy, gearChanged, dataReady, refreshLinks, tabHtml, hasSession,
     editInfo, cancelInfo, saveInfo:guard(saveInfo), editTravel, cancelTravel, saveTravel:guard(saveTravel), copyTravel,
     removeTravel:guard(removeTravel), editMessage, saveMessage:guard(saveMessage), deleteMessage:guard(deleteMessage),
+    openManage, cancelManage, saveManage:guard(saveManage), manageRemove:guard(manageRemove),
     openAdmin:guard(openAdmin), leaveAdmin:guard(leaveAdmin), joinWithCode, adminEdit, adminCancel,
     adminPickExpedition, adminNameChanged, adminNewCode, adminSave:guard(adminSave), readDraft,
     adminAdd, adminRemove, adminJoin:guard(adminJoin), adminJoinAll:guard(adminJoinAll), adminLeave:guard(adminLeave),
