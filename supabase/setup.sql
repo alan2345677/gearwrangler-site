@@ -16,6 +16,10 @@
 --   - A private thread is visible only to that participant and the trip's staff.
 --   - Only staff can verify gear, and only on their own trip.
 --   - 10 wrong codes in an hour locks that account out of code guessing for the hour.
+--   - Super admins (listed in the admins table) can add trips, including ones that aren't
+--     on the public expedition list, change codes, and add or remove other admins on the
+--     site. They see each trip's codes and head counts, not its people, gear, or messages.
+--     Nobody can make themselves an admin: the first one is added here, by hand.
 -- =====================================================================
 
 
@@ -70,10 +74,20 @@ create table if not exists public.code_attempts (
 );
 create index if not exists code_attempts_idx on public.code_attempts (user_id, at);
 
+-- Super admins. Add one in the SQL Editor (see SUPABASE-SETUP.md):
+--   insert into public.admins (user_id) select id from auth.users where email = 'you@example.com';
+-- After that, admins can add other admins on the site (Manage trips > Admins).
+create table if not exists public.admins (
+  user_id  uuid primary key references auth.users(id) on delete cascade,
+  added_by uuid references auth.users(id) on delete set null,
+  added_at timestamptz not null default now()
+);
+
 alter table public.trips         enable row level security;
 alter table public.members       enable row level security;
 alter table public.messages      enable row level security;
 alter table public.code_attempts enable row level security;
+alter table public.admins        enable row level security;
 
 
 -- ---------- Codes: tidy them so 'patagonia 7kq3' and 'PATAGONIA-7KQ3' match ----------
@@ -232,6 +246,152 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 
+-- ---------- Super admins ----------
+
+create or replace function public.is_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.admins a where a.user_id = auth.uid())
+$$;
+
+create or replace function public.admin_only() returns void
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  if not public.is_admin() then raise exception 'Only super admins can do that.'; end if;
+end $$;
+
+-- Codes an admin sets must be hard to guess, and not used by any other trip.
+create or replace function public.check_new_codes(p_trip text, p_code text, p_staff text) returns void
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  c text := public.normal_code(p_code);
+  s text := public.normal_code(p_staff);
+begin
+  if char_length(c) < 8 or c !~ '[0-9]' or char_length(s) < 8 or s !~ '[0-9]' then
+    raise exception 'Codes need at least 8 characters, including a number, so they''re hard to guess.';
+  end if;
+  if char_length(c) > 40 or char_length(s) > 40 then raise exception 'Keep codes under 40 characters.'; end if;
+  if c = s then raise exception 'The participant and staff codes must be different.'; end if;
+  if exists (select 1 from public.trips t where t.id is distinct from p_trip
+             and (t.code in (c, s) or t.staff_code in (c, s))) then
+    raise exception 'That code is already used by another trip. Pick a different one.';
+  end if;
+end $$;
+
+-- Every trip, with its codes and head counts. Admins only.
+create or replace function public.admin_trips() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  perform public.admin_only();
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', t.id, 'expeditionId', t.expedition_id, 'code', t.code, 'staffCode', t.staff_code,
+      'starts', t.starts, 'ends', t.ends, 'createdAt', t.created_at,
+      'fallback', jsonb_strip_nulls(jsonb_build_object('name', t.name, 'location', t.location, 'when', t.dates, 'endsBy', t.ends)),
+      'participants', (select count(*) from public.members m where m.trip_id = t.id and m.role = 'participant'),
+      'staff', (select count(*) from public.members m where m.trip_id = t.id and m.role <> 'participant')
+    ) order by t.starts nulls last, t.created_at)
+    from public.trips t), '[]'::jsonb);
+end $$;
+
+-- Add a trip. Either pick an expedition from the public list (p_expedition_id), or leave
+-- that empty and type in a name, location, and dates for a trip that isn't on the list.
+-- For listed expeditions the name, location, and dates are kept as a backup in case it
+-- later drops off the list. Returns the new trip's id.
+create or replace function public.admin_add_trip(
+  p_expedition_id text, p_code text, p_staff_code text, p_starts date, p_ends date,
+  p_name text default null, p_location text default null, p_dates text default null
+) returns text
+language plpgsql security definer set search_path = '' as $$
+declare
+  exp_id text := trim(coalesce(p_expedition_id, ''));
+  nm text := nullif(left(trim(coalesce(p_name, '')), 120), '');
+  base text;
+  new_id text;
+  n int := 1;
+begin
+  perform public.admin_only();
+  if exp_id = '' then
+    if nm is null then raise exception 'Add the trip''s name.'; end if;
+    exp_id := 'custom-' || trim(both '-' from left(regexp_replace(lower(nm), '[^a-z0-9]+', '-', 'g'), 50));
+    if exp_id = 'custom-' then exp_id := 'custom-trip'; end if;
+  end if;
+  if p_starts is null then raise exception 'Add the first day.'; end if;
+  if p_ends is not null and p_ends < p_starts then raise exception 'The last day is before the first day.'; end if;
+  perform public.check_new_codes(null, p_code, p_staff_code);
+  base := left(regexp_replace(lower(exp_id), '[^a-z0-9]+', '-', 'g'), 60) || '-' || to_char(p_starts, 'YYYY');
+  new_id := base;
+  while exists (select 1 from public.trips where id = new_id) loop
+    n := n + 1;
+    new_id := base || '-' || n;
+  end loop;
+  insert into public.trips (id, expedition_id, code, staff_code, starts, ends, name, location, dates)
+  values (new_id, exp_id, p_code, p_staff_code, p_starts, p_ends,
+          nm, nullif(left(trim(coalesce(p_location, '')), 120), ''), nullif(left(trim(coalesce(p_dates, '')), 80), ''));
+  return new_id;
+end $$;
+
+-- Change a trip's codes and dates, plus its name, location, and dates text if those are
+-- given (left empty = unchanged). People already on the trip stay on it.
+create or replace function public.admin_update_trip(
+  p_trip text, p_code text, p_staff_code text, p_starts date, p_ends date,
+  p_name text default null, p_location text default null, p_dates text default null
+) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform public.admin_only();
+  if not exists (select 1 from public.trips where id = p_trip) then raise exception 'That trip no longer exists.'; end if;
+  if p_starts is null then raise exception 'Add the first day.'; end if;
+  if p_ends is not null and p_ends < p_starts then raise exception 'The last day is before the first day.'; end if;
+  if p_name is not null and trim(p_name) = '' then raise exception 'Add the trip''s name.'; end if;
+  perform public.check_new_codes(p_trip, p_code, p_staff_code);
+  update public.trips set code = p_code, staff_code = p_staff_code, starts = p_starts, ends = p_ends,
+    name     = case when p_name is null then name else left(trim(p_name), 120) end,
+    location = case when p_location is null then location else nullif(left(trim(p_location), 120), '') end,
+    dates    = case when p_dates is null then dates else nullif(left(trim(p_dates), 80), '') end
+  where id = p_trip;
+end $$;
+
+-- Everyone who is a super admin. Admins only.
+create or replace function public.admin_list_admins() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  perform public.admin_only();
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'userId', a.user_id, 'email', u.email, 'addedAt', a.added_at, 'addedBy', b.email,
+      'you', a.user_id = auth.uid()) order by a.added_at)
+    from public.admins a
+    join auth.users u on u.id = a.user_id
+    left join auth.users b on b.id = a.added_by), '[]'::jsonb);
+end $$;
+
+-- Make someone an admin by their account email. They need an account on the site first.
+create or replace function public.admin_add_admin(p_email text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid;
+begin
+  perform public.admin_only();
+  select u.id into uid from auth.users u where lower(u.email) = lower(trim(coalesce(p_email, ''))) limit 1;
+  if uid is null then
+    raise exception 'No account uses that email yet. Ask them to create one on My trip, then add them.';
+  end if;
+  insert into public.admins (user_id, added_by) values (uid, auth.uid()) on conflict (user_id) do nothing;
+  return public.admin_list_admins();
+end $$;
+
+-- Remove an admin. You can't remove yourself, so there's always at least one admin.
+create or replace function public.admin_remove_admin(p_user uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform public.admin_only();
+  if p_user = auth.uid() then raise exception 'You can''t remove yourself. Ask another admin.'; end if;
+  delete from public.admins where user_id = p_user;
+  return public.admin_list_admins();
+end $$;
+
+
 -- ---------- Guards on saving ----------
 
 -- Saving a member: you can change your own profile, gear, and 1-1, but not your own
@@ -328,7 +488,7 @@ create policy messages_insert on public.messages for insert to authenticated
     ));
 
 -- Table access: nothing for signed-out visitors. Signed-in people go through the rules above.
-revoke all on public.trips, public.members, public.messages, public.code_attempts from anon, authenticated;
+revoke all on public.trips, public.members, public.messages, public.code_attempts, public.admins from anon, authenticated;
 grant select, update on public.members to authenticated;
 grant select, insert on public.messages to authenticated;
 
@@ -337,11 +497,19 @@ revoke execute on function
   public.normal_code(text), public.trips_tidy(), public.my_member_id(text), public.is_staff(text),
   public.trip_json(public.trips, text), public.code_tries_left(), public.find_trip_code(text),
   public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text),
-  public.members_guard(), public.messages_fill()
+  public.members_guard(), public.messages_fill(),
+  public.is_admin(), public.admin_only(), public.check_new_codes(text, text, text), public.admin_trips(),
+  public.admin_add_trip(text, text, text, date, date, text, text, text),
+  public.admin_update_trip(text, text, text, date, date, text, text, text),
+  public.admin_list_admins(), public.admin_add_admin(text), public.admin_remove_admin(uuid)
   from public, anon, authenticated;
 grant execute on function
   public.my_member_id(text), public.is_staff(text), public.find_trip_code(text),
-  public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text)
+  public.join_trip(text, text, text, text, text, jsonb), public.my_trip(), public.trip_members(text),
+  public.is_admin(), public.admin_trips(),
+  public.admin_add_trip(text, text, text, date, date, text, text, text),
+  public.admin_update_trip(text, text, text, date, date, text, text, text),
+  public.admin_list_admins(), public.admin_add_admin(text), public.admin_remove_admin(uuid)
   to authenticated;
 
 select 'Setup done. Next: run check.sql.' as result;

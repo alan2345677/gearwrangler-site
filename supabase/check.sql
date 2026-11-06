@@ -16,13 +16,14 @@ declare
   u_p2  uuid := gen_random_uuid();
   u_out uuid := gen_random_uuid();
   u_b   uuid := gen_random_uuid();
+  u_adm uuid := gen_random_uuid();
   m_vf uuid; m_p1 uuid; m_p2 uuid; m_b uuid;
   j jsonb; n int; ok boolean; i int;
 begin
   -- Setup, as the dashboard would.
   insert into auth.users (id, email) values
     (u_vf,  'zz-vf@check.invalid'),  (u_p1, 'zz-p1@check.invalid'), (u_p2, 'zz-p2@check.invalid'),
-    (u_out, 'zz-out@check.invalid'), (u_b,  'zz-b@check.invalid');
+    (u_out, 'zz-out@check.invalid'), (u_b,  'zz-b@check.invalid'), (u_adm, 'zz-adm@check.invalid');
   insert into public.trips (id, expedition_id, code, staff_code, starts, name) values
     ('zz-check-a', 'zz-a', 'zz check a', 'zz check a staff', '2030-01-01', 'Check A'),
     ('zz-check-b', 'zz-b', 'ZZ-CHECK-B', 'ZZ-CHECK-B-STAFF', '2030-02-01', 'Check B');
@@ -136,14 +137,135 @@ begin
   select count(*) into n from public.messages;
   if (n = 0) is not true then raise exception 'Check failed: %', 'a stranger sees no messages'; end if;
 
+  -- Super admins.
+  perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
+  insert into public.admins (user_id) values (u_adm);
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  if (public.is_admin()) is not false then raise exception 'Check failed: %', 'a participant is not an admin'; end if;
+  begin
+    perform public.admin_trips(); ok := false;
+  exception when others then ok := sqlerrm like '%super admins%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'only admins can list every trip'; end if;
+  begin
+    perform public.admin_add_trip('zz-new', 'ZZ-SNEAKY-1234', 'ZZ-SNEAKY-STAFF-1234', '2030-03-01', null); ok := false;
+  exception when others then ok := sqlerrm like '%super admins%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'only admins can add trips'; end if;
+  begin
+    perform public.admin_update_trip('zz-check-a', 'ZZ-MINE-1234', 'ZZ-MINE-STAFF-1234', '2030-01-01', null); ok := false;
+  exception when others then ok := sqlerrm like '%super admins%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'only admins can change codes'; end if;
+  begin
+    insert into public.admins (user_id) values (u_p1); ok := false;
+  exception when insufficient_privilege then ok := true;
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'nobody can make themselves an admin'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  if (public.is_admin()) is not true then raise exception 'Check failed: %', 'an admin is an admin'; end if;
+  select x into j from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-a';
+  if (j->>'code' = 'ZZ-CHECK-A' and j->>'staffCode' = 'ZZ-CHECK-A-STAFF') is not true then raise exception 'Check failed: %', 'admins see every trip''s codes'; end if;
+  if ((j->>'participants')::int = 2 and (j->>'staff')::int = 1) is not true then raise exception 'Check failed: %', 'admins see head counts'; end if;
+  select count(*) into n from public.trip_members('zz-check-a');
+  if (n = 0) is not true then raise exception 'Check failed: %', 'admins don''t see a trip''s people without joining it'; end if;
+  select count(*) into n from public.messages;
+  if (n = 0) is not true then raise exception 'Check failed: %', 'admins don''t see messages without joining'; end if;
+  begin
+    perform public.admin_add_trip('zz-new', 'PATAGONIA', 'ZZ-NEW-STAFF-1234', '2030-03-01', null); ok := false;
+  exception when others then ok := sqlerrm like '%hard to guess%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'easy-to-guess codes are refused'; end if;
+  begin
+    perform public.admin_add_trip('zz-new', 'ZZ-CHECK-B-STAFF-9', 'zz check b staff 9', '2030-03-01', null); ok := false;
+  exception when others then ok := sqlerrm like '%different%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'participant and staff codes must differ'; end if;
+  begin
+    update public.trips set staff_code = 'ZZ-CHECK-B-STAFF-9' where id = 'zz-check-b'; ok := false;
+  exception when insufficient_privilege then ok := true;
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'admins change trips only through the checked functions'; end if;
+  perform set_config('role', 'postgres', true);
+  update public.trips set staff_code = 'ZZ-CHECK-B-STAFF-9' where id = 'zz-check-b';
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_add_trip('zz-new', 'ZZ-CHECK-B-STAFF-9', 'ZZ-NEW-STAFF-1234', '2030-03-01', null); ok := false;
+  exception when others then ok := sqlerrm like '%already used%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'a new code can''t match another trip''s code'; end if;
+  if (public.admin_add_trip('zz-new', 'zz new 1234', 'ZZ-NEW-STAFF-1234', '2030-03-01', '2030-03-08', 'New Trip', 'Somewhere', 'March 2030') = 'zz-new-2030') is not true then raise exception 'Check failed: %', 'admins can add a trip'; end if;
+  if (public.admin_add_trip('zz-new', 'ZZ-NEW-5678', 'ZZ-NEW-STAFF-5678', '2030-09-01', null) = 'zz-new-2030-2') is not true then raise exception 'Check failed: %', 'a second trip of the same expedition gets its own id'; end if;
+  perform public.admin_update_trip('zz-check-a', 'ZZ-CHECK-A-NEW1', 'ZZ-CHECK-A-STAFF-NEW1', '2030-01-02', '2030-01-09');
+  if ((select x->'fallback'->>'name' from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'zz-check-a') = 'Check A') is not true then raise exception 'Check failed: %', 'changing codes leaves the name alone'; end if;
+
+  -- Trips that aren't on the public list.
+  begin
+    perform public.admin_add_trip(null, 'ZZ-CUSTOM-1234', 'ZZ-CUSTOM-STAFF-1234', '2030-06-01', null, '  '); ok := false;
+  exception when others then ok := sqlerrm like '%name%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'a typed-in trip needs a name'; end if;
+  if (public.admin_add_trip('', 'ZZ-CUSTOM-1234', 'ZZ-CUSTOM-STAFF-1234', '2030-06-01', '2030-06-07',
+      'ZZ Custom Trek!', 'Somewhere, Utah', 'June 1-7, 2030') = 'custom-zz-custom-trek-2030') is not true then raise exception 'Check failed: %', 'admins can type in a trip that isn''t on the list'; end if;
+  perform public.admin_update_trip('custom-zz-custom-trek-2030', 'ZZ-CUSTOM-1234', 'ZZ-CUSTOM-STAFF-1234', '2030-06-02', '2030-06-07',
+    'ZZ Custom Trek', 'Moab, Utah', 'June 2-7, 2030');
+  select x into j from jsonb_array_elements(public.admin_trips()) x where x->>'id' = 'custom-zz-custom-trek-2030';
+  if (j->'fallback'->>'name' = 'ZZ Custom Trek' and j->'fallback'->>'location' = 'Moab, Utah' and j->>'starts' = '2030-06-02') is not true then raise exception 'Check failed: %', 'admins can change a typed-in trip''s name, place, and dates'; end if;
+
+  -- Adding and removing admins.
+  begin
+    perform public.admin_add_admin('nobody-here@check.invalid'); ok := false;
+  exception when others then ok := sqlerrm like '%No account%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'adding an admin needs an existing account'; end if;
+  j := public.admin_add_admin(' ZZ-VF@Check.Invalid ');
+  if (jsonb_array_length(j) = 2) is not true then raise exception 'Check failed: %', 'admins can add an admin by email (any case)'; end if;
+  begin
+    perform public.admin_remove_admin(u_adm); ok := false;
+  exception when others then ok := sqlerrm like '%yourself%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'admins can''t remove themselves'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  if (public.is_admin()) is not true then raise exception 'Check failed: %', 'a newly added admin is an admin'; end if;
+  if ((select count(*) from jsonb_array_elements(public.admin_list_admins()) x where (x->>'you')::boolean) = 1) is not true then raise exception 'Check failed: %', 'the admin list marks you'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_add_admin('zz-p1@check.invalid'); ok := false;
+  exception when others then ok := sqlerrm like '%super admins%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'only admins can add admins'; end if;
+  begin
+    perform public.admin_list_admins(); ok := false;
+  exception when others then ok := sqlerrm like '%super admins%';
+  end;
+  if (ok) is not true then raise exception 'Check failed: %', 'only admins can see who the admins are'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_adm)::text, true), set_config('role', 'authenticated', true);
+  j := public.admin_remove_admin(u_vf);
+  if (jsonb_array_length(j) = 1) is not true then raise exception 'Check failed: %', 'admins can remove another admin'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_vf)::text, true), set_config('role', 'authenticated', true);
+  if (public.is_admin()) is not false then raise exception 'Check failed: %', 'a removed admin is no longer an admin'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', u_b)::text, true), set_config('role', 'authenticated', true);
+  if (public.find_trip_code('ZZ-NEW-1234')->'trip'->>'id' = 'zz-new-2030') is not true then raise exception 'Check failed: %', 'a new trip''s code works right away'; end if;
+  if (public.find_trip_code('ZZ-CHECK-A') is null) is not true then raise exception 'Check failed: %', 'an old code stops working once changed'; end if;
+  if (public.find_trip_code('zz check a new1')->>'role' = 'participant') is not true then raise exception 'Check failed: %', 'the changed code works'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', u_p1)::text, true), set_config('role', 'authenticated', true);
+  j := public.my_trip();
+  if (j->'trip'->>'id' = 'zz-check-a' and j->'trip'->>'code' = 'ZZ-CHECK-A-NEW1') is not true then raise exception 'Check failed: %', 'people stay on a trip when its code changes, and see the new code'; end if;
+
   -- Code guessing is limited.
   for i in 1..10 loop perform public.find_trip_code('guess-' || i); end loop;
   if (public.find_trip_code('ZZ-CHECK-A')->>'error' = 'too_many') is not true then raise exception 'Check failed: %', 'too many wrong codes locks guessing'; end if;
 
   -- Clean up.
   perform set_config('request.jwt.claims', '', true), set_config('role', 'postgres', true);
-  delete from public.trips where id in ('zz-check-a', 'zz-check-b');
-  delete from auth.users where id in (u_vf, u_p1, u_p2, u_out, u_b);
+  delete from public.trips where id in ('zz-check-a', 'zz-check-b', 'zz-new-2030', 'zz-new-2030-2', 'custom-zz-custom-trek-2030');
+  delete from auth.users where id in (u_vf, u_p1, u_p2, u_out, u_b, u_adm);
 end $$;
 
 select 'All checks passed' as result;

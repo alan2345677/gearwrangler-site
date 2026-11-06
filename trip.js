@@ -274,6 +274,28 @@ const LiveTripData = (() => {
       await run(sb().from('messages').insert({ trip_id:tripId, author_id:m.authorId, author_name:'', author_role:'',
         thread:m.thread || null, text:m.text }));
     },
+
+    // Super admins (listed in the admins table in Supabase). The database refuses these for anyone else.
+    async isAdmin(){
+      try{ return (await run(sb().rpc('is_admin'))) === true; }
+      catch(e){ console.error(e); return false; }  // e.g. setup.sql hasn't been re-run yet
+    },
+    async adminTrips(){ return (await run(sb().rpc('admin_trips'))) || []; },
+    async adminAddTrip(t){
+      return run(sb().rpc('admin_add_trip', { p_expedition_id:t.expeditionId, p_code:normal(t.code),
+        p_staff_code:normal(t.staffCode), p_starts:t.starts, p_ends:t.ends || null,
+        p_name:t.name || null, p_location:t.location || null, p_dates:t.when || null }));
+    },
+    // name, location, and when are sent only for typed-in trips; otherwise they stay as they are.
+    async adminUpdateTrip(t){
+      await run(sb().rpc('admin_update_trip', { p_trip:t.id, p_code:normal(t.code),
+        p_staff_code:normal(t.staffCode), p_starts:t.starts, p_ends:t.ends || null,
+        p_name:t.name == null ? null : t.name, p_location:t.location == null ? null : t.location,
+        p_dates:t.when == null ? null : t.when }));
+    },
+    async adminList(){ return (await run(sb().rpc('admin_list_admins'))) || []; },
+    async adminAdd(email){ return (await run(sb().rpc('admin_add_admin', { p_email:email }))) || []; },
+    async adminRemove(userId){ return (await run(sb().rpc('admin_remove_admin', { p_user:userId }))) || []; },
     reset(){}
   };
 })();
@@ -311,7 +333,8 @@ const MyTrip = (() => {
   function freshState(){
     return { step:'code', view:'home', trip:null, role:null, code:null, me:null, members:[], messages:[],
       error:'', notice:'', msgTab:'board', thread:null, open:null, editing:false, loaded:false,
-      checked:false, user:null, authMode:'signin', email:'', busy:false };
+      checked:false, user:null, authMode:'signin', email:'', busy:false,
+      admin:false, adminTrips:[], adminEdit:null, adminDraft:null, admins:[], adminError:'' };
   }
 
   // ---------- Session: which trip and which person, in this browser ----------
@@ -333,6 +356,7 @@ const MyTrip = (() => {
     if(TripData.needsAuth){
       s.user = await TripData.user();
       if(!s.user){ writeSession(null); s.step = 'signin'; return false; }
+      s.admin = TripData.isAdmin ? await TripData.isAdmin() : false;
     }
     const found = await TripData.myMembership(readSession());
     if(found){
@@ -342,7 +366,9 @@ const MyTrip = (() => {
     if(!found || !s.me){
       writeSession(null);
       s.trip = null; s.me = null; s.loaded = false;
+      // Super admins who aren't on a trip land on Manage trips.
       if(s.step !== 'profile') s.step = 'code';
+      if(s.admin && s.step === 'code') await loadAdmin();
       refreshLinks(); buildTabs();
       return false;
     }
@@ -479,6 +505,7 @@ const MyTrip = (() => {
     else if(s.step === 'loading' || s.step === 'error') el.innerHTML = statusHtml();
     else if(s.step === 'code') el.innerHTML = codeHtml();
     else if(s.step === 'profile') el.innerHTML = profileHtml();
+    else if(s.step === 'admin') el.innerHTML = adminHtml();
     else el.innerHTML = shellHtml();
   }
 
@@ -496,6 +523,7 @@ const MyTrip = (() => {
     if(/email/i.test(msg) && /invalid/i.test(msg)) return 'Check the email address.';
     if(/session.*missing|jwt|not authenticated|sign in first/i.test(msg)) return 'Your sign-in expired. Sign in again.';
     if(/fetch|network|offline|load failed/i.test(msg)) return "Couldn't reach the server. Check your connection and try again.";
+    if(code === 'P0001' && msg) return msg;  // a plain-language message written in setup.sql
     return 'Something went wrong. Try again.';
   }
 
@@ -569,6 +597,7 @@ const MyTrip = (() => {
           <div class="demo-people"><div class="plan-label">Or look around as someone already on the trip</div>
             ${DEMO_PEOPLE.map(p => `<button class="option-btn small" onclick="MyTrip.demoAs('${p.id}')">${esc(p.name)}<span class="opt-sub">${esc(ROLE_LABEL[p.role])}</span></button>`).join('')}
           </div>` : ''}
+          ${s.admin ? `<p class="fine-print">Super admin? <span class="text-link" onclick="MyTrip.openAdmin()">Manage trips</span></p>` : ''}
           ${s.user ? `<p class="fine-print">Signed in as ${esc(s.user.email)}. <span class="text-link" onclick="MyTrip.signOut()">Sign out</span></p>` : ''}
         </div>
       </div></div>`;
@@ -630,6 +659,7 @@ const MyTrip = (() => {
           <span class="trip-nav-link" onclick="goToHero()">← Gear Wrangler</span>
           <span class="trip-nav-right">
             <span class="trip-nav-who">${esc(s.me.name)}<span class="hide-sm"> · ${esc(ROLE_LABEL[s.me.role])}</span></span>
+            ${s.admin ? `<button class="trip-signout" onclick="MyTrip.openAdmin()">Admin</button>` : ''}
             <button class="trip-signout" onclick="MyTrip.signOut()">Sign out</button>
           </span>
         </nav>
@@ -927,6 +957,294 @@ const MyTrip = (() => {
     if(others.length) html += `<div class="section-label">With other staff · ${others.length}</div>` + others.map(m => personLine(m, `<span class="chip wait">${esc(m.oneOnOne.withName.split(' ')[0])} · ${esc(stamp(m.oneOnOne.when))}</span>`, `MyTrip.openThread('${m.id}')`)).join('');
     html += `<div class="section-label">Not booked · ${notYet.length}</div>` + (notYet.length ? notYet.map(m => personLine(m, `<span class="chip warn">Not yet</span>`, `MyTrip.openThread('${m.id}')`)).join('') : `<p class="fine-print">Everyone's booked.</p>`);
     return html;
+  }
+
+  // ---------- Manage trips (super admins) ----------
+  // Admins add trips and change codes. The database checks every change (see admin_* in setup.sql).
+  const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';  // no 0/O, 1/I/L
+  function randomPart(){
+    for(;;){
+      const nums = new Uint32Array(4);
+      crypto.getRandomValues(nums);
+      const part = Array.from(nums, n => CODE_CHARS[n % CODE_CHARS.length]).join('');
+      if(/[0-9]/.test(part)) return part;
+    }
+  }
+  const CUSTOM = '__custom';  // "Not on the list" in the expedition picker
+  const isCustom = t => String(t.expeditionId || '').startsWith('custom-');
+  // A readable word for the code, e.g. 'ATACAMA' or 'PATAGONIA'. Typed-in trips use their name's first word.
+  function codeWord(expeditionId, name){
+    const id = String(expeditionId || '');
+    const photo = PHOTOS.find(p => id.includes(p.match));
+    const word = photo ? photo.match
+      : id && id !== CUSTOM && !id.startsWith('custom-') ? id.split('-').filter(Boolean).pop()
+      : String(name || '').split(/\s+/).find(w => /[a-z0-9]{3,}/i.test(w));
+    return String(word || 'TRIP').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12) || 'TRIP';
+  }
+  const newCode = (d, staff) => `${codeWord(d.expeditionId, d.name)}${staff ? '-STAFF' : ''}-${randomPart()}`;
+  const goodCode = c => c.length >= 8 && /[0-9]/.test(c);
+
+  function adminExpedition(t){
+    const live = (expeditionList || []).find(e => e.id === t.expeditionId);
+    return live || Object.assign({ id:t.expeditionId, name:t.expeditionId }, t.fallback);
+  }
+  function dayText(iso){
+    if(!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  }
+  function tripDates(t){
+    return t.starts ? dayText(t.starts) + (t.ends ? ' – ' + dayText(t.ends) : '') : 'No dates yet';
+  }
+  async function loadAdmin(){
+    [s.adminTrips, s.admins] = await Promise.all([TripData.adminTrips(), TripData.adminList()]);
+    s.step = 'admin';
+  }
+  async function openAdmin(){
+    if(!s.admin) return;
+    s.error = ''; s.notice = '';
+    await loadAdmin();
+    render();
+    window.scrollTo({ top:0 });
+    focusHeading(document.getElementById('screen-trip'));
+  }
+  async function leaveAdmin(){
+    s.adminEdit = null; s.adminDraft = null; s.error = ''; s.notice = '';
+    await resume();  // picks up any change to your own trip's codes
+    render();
+    window.scrollTo({ top:0 });
+  }
+  function joinWithCode(){
+    s.step = 'code'; s.error = ''; s.notice = '';
+    render();
+    focusHeading(document.getElementById('screen-trip'));
+  }
+
+  function adminHtml(){
+    const today = todayIso();
+    const ended = t => t.ends && t.ends < today;
+    const current = s.adminTrips.filter(t => !ended(t));
+    const past = s.adminTrips.filter(ended);
+    const formOpen = !!s.adminEdit;
+    return `<div class="trip-shell">
+      <nav class="admin-bar">
+        <span class="trip-nav-link" onclick="goToHero()">← Gear Wrangler</span>
+        <span class="trip-nav-right">
+          ${s.me ? `<button class="trip-signout" onclick="MyTrip.leaveAdmin()">My trip</button>`
+            : `<button class="trip-signout" onclick="MyTrip.joinWithCode()">Join a trip</button>`}
+          <button class="trip-signout" onclick="MyTrip.signOut()">Sign out</button>
+        </span>
+      </nav>
+      <main class="trip-inner">
+        <div class="eyebrow">Super admin</div>
+        <h1 class="trip-h2">Manage trips.</h1>
+        <p class="subtext">Add trips and change their codes. You see codes and head counts, not people, gear, or messages.</p>
+        ${s.notice ? `<div class="trip-notice" role="status">${s.notice}</div>` : ''}
+        ${s.error && !formOpen ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
+        ${s.adminEdit === 'new' ? tripFormHtml(null)
+          : `<button class="btn" onclick="MyTrip.adminEdit('new')"${formOpen ? ' disabled' : ''}>Add a trip</button>`}
+        <div class="section-label">Trips · ${current.length}</div>
+        ${current.map(adminTripHtml).join('') || `<p class="fine-print">No trips yet.</p>`}
+        ${past.length ? `<div class="section-label">Ended · ${past.length}</div>` + past.map(adminTripHtml).join('') : ''}
+        ${adminsHtml()}
+        ${s.user ? `<p class="fine-print trip-device">Signed in as ${esc(s.user.email)}.</p>` : ''}
+      </main></div>`;
+  }
+  // Who else is a super admin, and the box to add one.
+  function adminsHtml(){
+    const day = iso => new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    return `<div class="section-label" id="admins">Admins · ${s.admins.length}</div>
+      ${s.admins.map(a => `<div class="person">
+        <span class="avatar staff" aria-hidden="true">${esc(initials(a.email))}</span>
+        <div class="person-body"><div class="person-name admin-email">${esc(a.email)}${a.you ? ' <span class="you">(you)</span>' : ''}</div>
+          <div class="person-sub">${a.addedBy ? `Added by ${esc(a.addedBy)}, ` : 'Added '}${esc(day(a.addedAt))}</div></div>
+        ${a.you ? '' : `<button class="btn secondary small" onclick="MyTrip.adminRemove('${esc(a.userId)}')">Remove</button>`}
+      </div>`).join('')}
+      <form class="edit-card admin-add" onsubmit="event.preventDefault(); MyTrip.adminAdd();" novalidate>
+        <label class="plan-label" for="admEmail">Add an admin</label>
+        <div class="code-field">
+          <input id="admEmail" class="search-box" type="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="their account email">
+          <button class="btn small" type="submit">Add</button>
+        </div>
+        ${s.adminError ? `<p class="form-error" role="alert">${esc(s.adminError)}</p>` : ''}
+        <p class="fine-print">They need an account first: they sign up on My trip with this email. Admins can add trips, change codes, and add or remove admins.</p>
+      </form>`;
+  }
+  function adminTripHtml(t){
+    const exp = adminExpedition(t);
+    const counts = `${t.participants} participant${t.participants === 1 ? '' : 's'} · ${t.staff} staff`;
+    const head = `<div class="admin-trip-head">
+        <div><div class="person-name">${esc(exp.name)}</div>
+        <div class="person-sub">${esc(tripDates(t))} · ${esc(counts)}</div></div></div>`;
+    if(s.adminEdit === t.id) return `<div class="edit-card admin-trip open">${head}${tripFormHtml(t)}</div>`;
+    return `<div class="edit-card admin-trip">${head}
+      <div class="admin-codes">
+        <div><div class="code-label">Participant code</div><div class="code-value">${esc(t.code)}</div></div>
+        <div><div class="code-label">Staff code</div><div class="code-value">${esc(t.staffCode)}</div></div>
+      </div>
+      <div class="button-row">
+        <button class="btn secondary small" onclick="MyTrip.adminEdit('${esc(t.id)}')"${s.adminEdit ? ' disabled' : ''}>Change codes or dates</button>
+        <button class="btn secondary small" onclick="MyTrip.copy('${esc(inviteLink(t.code))}', 'Invite link copied.')">Copy invite link</button>
+      </div></div>`;
+  }
+  // The add form (t = null) or the edit form for trip t.
+  function tripFormHtml(t){
+    const d = s.adminDraft || {};
+    const isNew = !t;
+    const exps = (expeditionList || []).slice().sort((a, b) => (a.program || '').localeCompare(b.program || '') || a.name.localeCompare(b.name));
+    const program = e => e.program === 'mba' ? 'MBA' : e.program === 'undergrad' ? 'Undergrad' : '';
+    const custom = isNew ? d.expeditionId === CUSTOM : isCustom(t);
+    const codeField = (id, label, value, staff) => `
+      <label class="plan-label" for="${id}">${label}</label>
+      <div class="code-field">
+        <input id="${id}" class="search-box code-input" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${esc(value || '')}">
+        <button class="btn secondary small" type="button" onclick="MyTrip.adminNewCode(${staff})">New</button>
+      </div>`;
+    return `<form class="${isNew ? 'edit-card ' : ''}admin-form" onsubmit="event.preventDefault(); MyTrip.adminSave();" oninput="MyTrip.readDraft(event)" novalidate>
+      ${isNew ? `<div class="person-name">New trip</div>
+        <label class="plan-label" for="admExp">Expedition</label>
+        <select id="admExp" class="owned-select full" onchange="MyTrip.adminPickExpedition()">
+          <option value="">Pick one…</option>
+          ${exps.map(e => `<option value="${esc(e.id)}"${d.expeditionId === e.id ? ' selected' : ''}>${esc(e.name)}${program(e) ? ' · ' + program(e) : ''}${e.when ? ' · ' + esc(e.when) : ''}</option>`).join('')}
+          <option value="${CUSTOM}"${custom ? ' selected' : ''}>Not on the list: type it in</option>
+        </select>
+        ${!expeditionList ? `<p class="fine-print">${expeditionLoadFailed ? "Couldn't load the expedition list. You can still type a trip in." : 'Loading the expedition list…'}</p>` : ''}` : ''}
+      ${custom ? `
+        <label class="plan-label" for="admName">Trip name</label>
+        <input id="admName" class="search-box" maxlength="120" placeholder="Spring Break: Grand Canyon" value="${esc(d.name || '')}" onchange="MyTrip.adminNameChanged()">
+        <label class="plan-label" for="admLocation">Location <span class="optional">(optional)</span></label>
+        <input id="admLocation" class="search-box" maxlength="120" placeholder="Arizona, USA" value="${esc(d.location || '')}">` : ''}
+      <div class="admin-dates">
+        <div><label class="plan-label" for="admStarts">First day</label>
+          <input id="admStarts" class="search-box" type="date" value="${esc(d.starts || '')}"></div>
+        <div><label class="plan-label" for="admEnds">Last day <span class="optional">(optional)</span></label>
+          <input id="admEnds" class="search-box" type="date" value="${esc(d.ends || '')}"></div>
+      </div>
+      ${codeField('admCode', 'Participant code', d.code, false)}
+      ${codeField('admStaffCode', 'Staff code <span class="optional">(Venture Fellows and guides)</span>', d.staffCode, true)}
+      <p class="fine-print">At least 8 characters, including a number. “New” makes a hard-to-guess one.${isNew ? '' : ' People already on the trip stay on it. The old codes stop working.'}${custom && isNew ? ' Trips you type in have no gear estimate, so My gear won’t check against one.' : ''}</p>
+      ${s.error ? `<p class="form-error" role="alert">${esc(s.error)}</p>` : ''}
+      <div class="button-row">
+        <button class="btn small" type="submit"${s.busy ? ' disabled' : ''}>${s.busy ? 'Saving…' : isNew ? 'Add trip' : 'Save'}</button>
+        <button class="btn secondary small" type="button" onclick="MyTrip.adminCancel()">Cancel</button>
+      </div></form>`;
+  }
+  // Keep what's typed in the form, so re-drawing it doesn't lose anything.
+  function readDraft(ev){
+    const d = s.adminDraft || (s.adminDraft = {});
+    const read = (id, key) => { const el = document.getElementById(id); if(el) d[key] = el.value.trim(); };
+    read('admExp', 'expeditionId'); read('admStarts', 'starts'); read('admEnds', 'ends');
+    read('admCode', 'code'); read('admStaffCode', 'staffCode'); read('admName', 'name'); read('admLocation', 'location');
+    // Once someone types their own code, stop replacing it automatically.
+    if(ev && ev.target && (ev.target.id === 'admCode' || ev.target.id === 'admStaffCode')) d.autoCodes = false;
+    return d;
+  }
+  function adminEdit(id){
+    s.error = ''; s.notice = '';
+    s.adminEdit = id;
+    if(id === 'new') s.adminDraft = { expeditionId:'', starts:'', ends:'', code:'', staffCode:'', name:'', location:'' };
+    else {
+      const t = s.adminTrips.find(x => x.id === id);
+      if(!t){ s.adminEdit = null; render(); return; }
+      const fb = t.fallback || {};
+      s.adminDraft = { expeditionId:t.expeditionId, starts:t.starts || '', ends:t.ends || '', code:t.code, staffCode:t.staffCode,
+        name:fb.name || '', location:fb.location || '' };
+    }
+    render();
+    const first = document.getElementById(id === 'new' ? 'admExp' : 'admCode');
+    if(first) first.focus();
+  }
+  function adminCancel(){
+    s.adminEdit = null; s.adminDraft = null; s.error = '';
+    render();
+  }
+  function adminPickExpedition(){
+    const d = readDraft();
+    const exp = (expeditionList || []).find(e => e.id === d.expeditionId);
+    if(exp || d.expeditionId === CUSTOM){
+      d.code = newCode(d, false);
+      d.staffCode = newCode(d, true);
+      d.autoCodes = true;
+      if(exp && exp.endsBy) d.ends = exp.endsBy;
+    }
+    render();
+    const el = document.getElementById(d.expeditionId === CUSTOM ? 'admName' : 'admStarts');
+    if(el && d.expeditionId) el.focus();
+  }
+  // A typed-in trip got its name: make the codes match it, unless they were typed by hand.
+  function adminNameChanged(){
+    const d = readDraft();
+    if(s.adminEdit !== 'new' || !d.autoCodes) return;
+    d.code = newCode(d, false);
+    d.staffCode = newCode(d, true);
+    const a = document.getElementById('admCode'), b = document.getElementById('admStaffCode');
+    if(a) a.value = d.code;
+    if(b) b.value = d.staffCode;
+  }
+  function adminNewCode(staff){
+    const d = readDraft();
+    if(staff) d.staffCode = newCode(d, true);
+    else d.code = newCode(d, false);
+    render();
+  }
+  async function adminAdd(){
+    const email = val('admEmail');
+    s.adminError = ''; s.notice = '';
+    if(!/^\S+@\S+\.\S+$/.test(email)){ s.adminError = email ? 'Check the email address.' : 'Add their email.'; render(); return; }
+    try{ s.admins = await TripData.adminAdd(email); }
+    catch(e){ console.error(e); s.adminError = friendly(e); render(); return; }
+    s.notice = `${esc(email)} is now an admin.`;
+    render();
+    window.scrollTo({ top:0 });
+  }
+  async function adminRemove(userId){
+    const a = s.admins.find(x => x.userId === userId);
+    if(!a || !confirm(`Remove ${a.email} as an admin? They keep their account and any trips they're on.`)) return;
+    s.adminError = ''; s.notice = '';
+    try{ s.admins = await TripData.adminRemove(userId); }
+    catch(e){ console.error(e); s.adminError = friendly(e); render(); return; }
+    s.notice = `${esc(a.email)} is no longer an admin.`;
+    render();
+    window.scrollTo({ top:0 });
+  }
+  async function adminSave(){
+    if(s.busy) return;
+    const d = readDraft();
+    const isNew = s.adminEdit === 'new';
+    const code = TripData.normal(d.code), staffCode = TripData.normal(d.staffCode);
+    const exp = (expeditionList || []).find(e => e.id === d.expeditionId);
+    const before = isNew ? null : s.adminTrips.find(t => t.id === s.adminEdit);
+    const custom = isNew ? d.expeditionId === CUSTOM : !!before && isCustom(before);
+    s.error = '';
+    if(isNew && !exp && !custom) s.error = 'Pick an expedition, or choose “Not on the list”.';
+    else if(custom && !d.name) s.error = 'Add the trip’s name.';
+    else if(!d.starts) s.error = 'Add the first day.';
+    else if(d.ends && d.ends < d.starts) s.error = 'The last day is before the first day.';
+    else if(!code || !staffCode) s.error = 'Add both codes, or click New.';
+    else if(!goodCode(code) || !goodCode(staffCode)) s.error = 'Codes need at least 8 characters, including a number, so they’re hard to guess.';
+    else if(code === staffCode) s.error = 'The participant and staff codes must be different.';
+    if(s.error){ render(); return; }
+    // Typed-in trips show these on their page, with the dates written out from the two days.
+    const typed = custom ? { name:d.name, location:d.location || '', when:tripDates(d) } : {};
+    s.busy = true;
+    render();
+    try{
+      if(isNew && custom){
+        await TripData.adminAddTrip(Object.assign({ expeditionId:'', code, staffCode, starts:d.starts, ends:d.ends }, typed));
+      } else if(isNew){
+        await TripData.adminAddTrip({ expeditionId:exp.id, code, staffCode, starts:d.starts, ends:d.ends,
+          name:exp.name, location:exp.location, when:exp.when });
+      } else {
+        await TripData.adminUpdateTrip(Object.assign({ id:s.adminEdit, code, staffCode, starts:d.starts, ends:d.ends }, typed));
+      }
+    } finally { s.busy = false; }
+    const changed = before && (before.code !== code || before.staffCode !== staffCode);
+    s.notice = isNew ? `Trip added. Send ${esc(code)} to participants and ${esc(staffCode)} to staff.`
+      : changed ? 'Saved. The new codes work now, and the old ones don’t.' : 'Saved.';
+    s.adminEdit = null; s.adminDraft = null;
+    await loadAdmin();
+    render();
+    window.scrollTo({ top:0 });
   }
 
   // ---------- Actions ----------
@@ -1256,5 +1574,8 @@ const MyTrip = (() => {
     demoAs:guard(demoAs), resetDemo, editProfile, cancelEdit, saveProfile:guard(saveProfile),
     toggle, openMember, review:guard(review), msgTab, openThread, post:guard(post), demoBooking,
     saveBooking:guard(saveBooking), clearBooking:guard(clearBooking), saveBookingLink:guard(saveBookingLink),
-    copy, gearChanged, dataReady, refreshLinks, tabHtml, hasSession };
+    copy, gearChanged, dataReady, refreshLinks, tabHtml, hasSession,
+    openAdmin:guard(openAdmin), leaveAdmin:guard(leaveAdmin), joinWithCode, adminEdit, adminCancel,
+    adminPickExpedition, adminNameChanged, adminNewCode, adminSave:guard(adminSave), readDraft,
+    adminAdd, adminRemove };
 })();

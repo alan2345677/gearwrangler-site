@@ -1,5 +1,6 @@
 -- =====================================================================
--- Add a trip. Edit the values, then paste into a new SQL Editor query and click Run.
+-- Add a trip by hand. Easier: on the site, My trip > Manage trips > Add a trip (super admins).
+-- Or edit the values below, then paste into a new SQL Editor query and click Run.
 -- (Or use Table Editor > trips > Insert row. Same fields.)
 --
 -- Codes: make them hard to guess. Add 4 random letters and numbers, e.g.
@@ -11,7 +12,7 @@
 --   mba-andes-mountaineering    mba-antarctica    mba-aotearoa-southern-traverse-nz
 --   mba-avellano-valley-patagonia    mba-vodudahue-cloud-forest-patagonia    mba-small-crew-sailing
 --
--- To change a code later (e.g. if it leaked), edit it in Table Editor > trips.
+-- To change a code later (e.g. if it leaked): Manage trips on the site, or Table Editor > trips.
 -- People already on the trip stay on it.
 -- =====================================================================
 
