@@ -1,5 +1,5 @@
 {
- "checkedOn": "2026-11-07",
+ "checkedOn": "2026-11-08",
  "held": [],
  "notRead": [
   {
@@ -68,6 +68,11 @@
    "reason": "store refused the check (403)"
   },
   {
+   "id": "deuter-aircontact-core-65-10",
+   "name": "Deuter Aircontact Core 65+10",
+   "reason": "page returned an error (404)"
+  },
+  {
    "id": "osprey-aether-65",
    "name": "Osprey Aether 65",
    "reason": "store refused the check (403)"
@@ -80,7 +85,7 @@
   {
    "id": "montbell-versalite",
    "name": "Montbell Versalite",
-   "reason": "no price found on the page"
+   "reason": "no connection"
   },
   {
    "id": "patagonia-torrentshell-3l",
@@ -317,8 +322,8 @@
  ],
  "summary": {
   "held": 0,
-  "not_read": 36,
+  "not_read": 37,
   "not_tracked": 26,
-  "updated": 65
+  "updated": 64
  }
 }
