@@ -1,5 +1,5 @@
 {
- "checkedOn": "2026-11-08",
+ "checkedOn": "2026-11-09",
  "held": [],
  "notRead": [
   {
@@ -66,11 +66,6 @@
    "id": "osprey-atmos-ag65",
    "name": "Osprey Atmos AG 65",
    "reason": "store refused the check (403)"
-  },
-  {
-   "id": "deuter-aircontact-core-65-10",
-   "name": "Deuter Aircontact Core 65+10",
-   "reason": "page returned an error (404)"
   },
   {
    "id": "osprey-aether-65",
@@ -322,8 +317,8 @@
  ],
  "summary": {
   "held": 0,
-  "not_read": 37,
+  "not_read": 36,
   "not_tracked": 26,
-  "updated": 64
+  "updated": 65
  }
 }
