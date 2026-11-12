@@ -1,5 +1,5 @@
 {
- "checkedOn": "2026-11-11",
+ "checkedOn": "2026-11-12",
  "held": [],
  "notRead": [
   {
@@ -80,7 +80,7 @@
   {
    "id": "montbell-versalite",
    "name": "Montbell Versalite",
-   "reason": "no connection"
+   "reason": "no price found on the page"
   },
   {
    "id": "patagonia-torrentshell-3l",
