@@ -1,5 +1,5 @@
 {
- "checkedOn": "2026-11-16",
+ "checkedOn": "2026-11-17",
  "held": [],
  "notRead": [
   {
@@ -125,7 +125,7 @@
   {
    "id": "hoka-speedgoat6",
    "name": "HOKA Speedgoat 6",
-   "reason": "page returned an error (406)"
+   "reason": "store refused the check (403)"
   },
   {
    "id": "danner-trail-2650",
