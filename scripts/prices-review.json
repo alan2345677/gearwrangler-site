@@ -1,5 +1,5 @@
 {
- "checkedOn": "2026-11-20",
+ "checkedOn": "2026-11-21",
  "held": [],
  "notRead": [
   {
@@ -60,7 +60,7 @@
   {
    "id": "gregory-baltoro-75",
    "name": "Gregory Baltoro 75",
-   "reason": "no price found on the page"
+   "reason": "page returned an error (307)"
   },
   {
    "id": "osprey-atmos-ag65",
@@ -75,12 +75,12 @@
   {
    "id": "gregory-paragon-60",
    "name": "Gregory Paragon 60",
-   "reason": "no price found on the page"
+   "reason": "page returned an error (307)"
   },
   {
    "id": "montbell-versalite",
    "name": "Montbell Versalite",
-   "reason": "no price found on the page"
+   "reason": "no connection"
   },
   {
    "id": "patagonia-torrentshell-3l",
