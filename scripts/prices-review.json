@@ -1,5 +1,5 @@
 {
- "checkedOn": "2026-11-24",
+ "checkedOn": "2026-11-25",
  "held": [],
  "notRead": [
   {
@@ -178,6 +178,11 @@
    "reason": "store shows no price"
   },
   {
+   "id": "jetboil-flash",
+   "name": "Jetboil Flash",
+   "reason": "no price found on the page"
+  },
+  {
    "id": "jetboil-stash",
    "name": "Jetboil Stash",
    "reason": "no price found on the page"
@@ -317,8 +322,8 @@
  ],
  "summary": {
   "held": 0,
-  "not_read": 36,
+  "not_read": 37,
   "not_tracked": 26,
-  "updated": 65
+  "updated": 64
  }
 }
